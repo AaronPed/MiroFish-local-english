@@ -8,10 +8,19 @@ LLM 生成的嵌套属性会导致 Neo4j 写入失败
 Patch 策略：
 - 拦截 bulk_utils.add_nodes_and_edges_bulk_tx
 - 在写入 Neo4j 前将嵌套 dict/list 转为 JSON 字符串
+
+环境变量：
+- GRAPHITI_DISABLE_PATCH=1  禁用此 patch（用于测试或 upstream 修复后）
+
+参考：
+- Issue: https://github.com/getzep/graphiti/issues/683
+- 测试版本: graphiti-core 0.25.x
 """
 
+import inspect
 import json
 import functools
+import os
 from typing import Any, Dict
 
 from ..utils.logger import get_logger
@@ -19,6 +28,9 @@ from ..utils.logger import get_logger
 logger = get_logger('mirofish.graphiti_patch')
 
 _patch_applied = False
+
+# 预期的函数签名参数（用于版本检查）
+EXPECTED_PARAMS = ['tx', 'episodic_nodes', 'episodic_edges', 'entity_nodes', 'entity_edges', 'embedder', 'driver']
 
 
 def sanitize_for_neo4j(value: Any, path: str = "") -> Any:
@@ -81,6 +93,9 @@ def apply_patch() -> bool:
     """
     应用 monkey-patch 到 graphiti-core
 
+    环境变量控制：
+    - GRAPHITI_DISABLE_PATCH=1  禁用 patch
+
     Returns:
         bool: patch 是否成功应用
     """
@@ -90,11 +105,30 @@ def apply_patch() -> bool:
         logger.debug("Graphiti patch 已应用，跳过")
         return True
 
+    # 检查环境变量开关
+    if os.environ.get('GRAPHITI_DISABLE_PATCH', '').lower() in ('1', 'true', 'yes'):
+        logger.info("Graphiti patch 已通过 GRAPHITI_DISABLE_PATCH 禁用")
+        return False
+
     try:
         from graphiti_core.utils import bulk_utils
 
         # 保存原始函数
         original_add_nodes_and_edges_bulk_tx = bulk_utils.add_nodes_and_edges_bulk_tx
+
+        # 版本检查：验证函数签名是否匹配预期
+        try:
+            sig = inspect.signature(original_add_nodes_and_edges_bulk_tx)
+            actual_params = list(sig.parameters.keys())
+            if actual_params != EXPECTED_PARAMS:
+                logger.error(
+                    f"Graphiti patch 签名不匹配！"
+                    f"预期: {EXPECTED_PARAMS}, 实际: {actual_params}. "
+                    f"可能 graphiti-core 版本已更新，请检查 Issue #683 是否已修复。"
+                )
+                return False
+        except Exception as e:
+            logger.warning(f"无法检查函数签名: {e}，继续应用 patch")
 
         @functools.wraps(original_add_nodes_and_edges_bulk_tx)
         async def patched_add_nodes_and_edges_bulk_tx(

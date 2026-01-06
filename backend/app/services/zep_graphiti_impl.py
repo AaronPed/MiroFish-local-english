@@ -14,6 +14,7 @@ Ontology 在 MVP 阶段先 no-op。
 """
 
 import asyncio
+import atexit
 import logging
 import os
 import threading
@@ -42,6 +43,7 @@ logger = logging.getLogger('mirofish.graphiti_client')
 _async_loop: Optional[asyncio.AbstractEventLoop] = None
 _async_thread: Optional[threading.Thread] = None
 _init_lock = threading.Lock()
+_shutting_down = False  # 关闭标志，防止退出期间 _run_async 重启 loop
 
 
 def _start_async_loop():
@@ -54,10 +56,15 @@ def _start_async_loop():
 
 
 def _ensure_async_loop():
-    """确保后台事件循环已启动"""
+    """确保后台事件循环已启动（关闭期间不启动）"""
     global _async_thread
+    if _shutting_down:
+        # 正在关闭，不启动新循环
+        return
     if _async_thread is None or not _async_thread.is_alive():
         with _init_lock:
+            if _shutting_down:
+                return
             if _async_thread is None or not _async_thread.is_alive():
                 _async_thread = threading.Thread(
                     target=_start_async_loop,
@@ -78,9 +85,35 @@ def _run_async(coro):
     使用专用后台线程的事件循环，通过 run_coroutine_threadsafe 提交任务。
     这样 Neo4j driver 始终绑定到同一个循环，避免跨循环问题。
     """
+    if _shutting_down:
+        logger.debug("进程正在关闭，跳过异步操作")
+        return None
     _ensure_async_loop()
+    if _async_loop is None or not _async_loop.is_running():
+        raise RuntimeError("Graphiti 事件循环不可用（初始化失败或已停止）")
+    timeout = int(os.environ.get('GRAPHITI_ASYNC_TIMEOUT', '300'))
     future = asyncio.run_coroutine_threadsafe(coro, _async_loop)
-    return future.result(timeout=300)  # 5分钟超时
+    return future.result(timeout=timeout)
+
+
+def _shutdown_async_loop():
+    """关闭后台事件循环（进程退出时调用）"""
+    global _async_loop, _async_thread, _shutting_down
+    # 先设置关闭标志，防止 __del__/close 期间 _run_async 重启 loop
+    _shutting_down = True
+    if _async_loop is not None and _async_loop.is_running():
+        _async_loop.call_soon_threadsafe(_async_loop.stop)
+        logger.info("Graphiti 专用事件循环已停止")
+    if _async_thread is not None and _async_thread.is_alive():
+        _async_thread.join(timeout=5)
+        if _async_thread.is_alive():
+            logger.warning("Graphiti 后台线程未能在超时内退出")
+        else:
+            logger.info("Graphiti 后台线程已退出")
+
+
+# 注册进程退出时的清理回调
+atexit.register(_shutdown_async_loop)
 
 
 class DashScopeEmbedderWrapper:
@@ -193,6 +226,7 @@ class GraphitiClient(ZepClientAdapter):
         self._graphiti = None
         self._driver = None
         self._initialized = False
+        self._client_init_lock = threading.Lock()  # 初始化锁，防止并发首请求重复初始化
 
         # 记录创建的 graph_id（用于 group_id 映射）
         self._graph_metadata: Dict[str, Dict[str, Any]] = {}
@@ -201,50 +235,55 @@ class GraphitiClient(ZepClientAdapter):
         self._ontology_cache: Dict[str, Dict[str, Any]] = {}
 
     def _ensure_initialized(self):
-        """确保 Graphiti 已初始化"""
+        """确保 Graphiti 已初始化（双重检查锁定，防止并发重复初始化）"""
         if self._initialized:
             return
 
-        try:
-            from graphiti_core import Graphiti
+        with self._client_init_lock:
+            # 双重检查：获取锁后再次检查，避免重复初始化
+            if self._initialized:
+                return
 
-            # 应用 Neo4j 属性 sanitization patch (Issue #683 workaround)
-            from .graphiti_patch import apply_patch
-            apply_patch()
+            try:
+                from graphiti_core import Graphiti
 
-            llm_client = self._llm_client
-            if llm_client is None:
-                llm_client = self._build_default_llm_client()
+                # 应用 Neo4j 属性 sanitization patch (Issue #683 workaround)
+                from .graphiti_patch import apply_patch
+                apply_patch()
 
-            embedder = self._embedder
-            if embedder is None:
-                embedder = self._build_default_embedder()
+                llm_client = self._llm_client
+                if llm_client is None:
+                    llm_client = self._build_default_llm_client()
 
-            # 创建 Graphiti 实例
-            self._graphiti = Graphiti(
-                self.neo4j_uri,
-                self.neo4j_user,
-                self.neo4j_password,
-                llm_client=llm_client,
-                embedder=embedder,
-            )
+                embedder = self._embedder
+                if embedder is None:
+                    embedder = self._build_default_embedder()
 
-            # 初始化索引和约束
-            _run_async(self._graphiti.build_indices_and_constraints())
+                # 创建 Graphiti 实例
+                self._graphiti = Graphiti(
+                    self.neo4j_uri,
+                    self.neo4j_user,
+                    self.neo4j_password,
+                    llm_client=llm_client,
+                    embedder=embedder,
+                )
 
-            # 获取底层 Neo4j driver 用于直接查询
-            self._driver = self._graphiti.driver
+                # 初始化索引和约束
+                _run_async(self._graphiti.build_indices_and_constraints())
 
-            self._initialized = True
-            logger.info("Graphiti 客户端初始化完成")
+                # 获取底层 Neo4j driver 用于直接查询
+                self._driver = self._graphiti.driver
 
-        except ImportError as e:
-            raise ImportError(
-                "graphiti-core 未安装。请运行: pip install graphiti-core"
-            ) from e
-        except Exception as e:
-            logger.error(f"Graphiti 初始化失败: {e}")
-            raise
+                self._initialized = True
+                logger.info("Graphiti 客户端初始化完成")
+
+            except ImportError as e:
+                raise ImportError(
+                    "graphiti-core 未安装。请运行: pip install graphiti-core"
+                ) from e
+            except Exception as e:
+                logger.error(f"Graphiti 初始化失败: {e}")
+                raise
 
     def _build_default_llm_client(self) -> Any:
         """
@@ -307,8 +346,9 @@ class GraphitiClient(ZepClientAdapter):
 
         # DashScope API 有批次大小限制，需要包装
         if self._is_openai_compatible_only():
-            logger.info("检测到非标准 OpenAI API，启用 DashScope Embedder 分块处理")
-            return _create_dashscope_embedder_wrapper(base_embedder, max_batch_size=10)
+            batch_size = min(int(os.environ.get('GRAPHITI_EMBEDDING_BATCH_SIZE', '10')), 10)  # DashScope max=10
+            logger.info(f"检测到非标准 OpenAI API，启用 DashScope Embedder 分块处理 (batch_size={batch_size})")
+            return _create_dashscope_embedder_wrapper(base_embedder, max_batch_size=batch_size)
 
         return base_embedder
 
