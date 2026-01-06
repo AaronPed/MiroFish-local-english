@@ -112,6 +112,44 @@ MiroFish 原本依赖 Zep Cloud 提供知识图谱和记忆服务。本次本地
 
 ---
 
+### 6. Hardening 改进
+
+**文件**：
+- `backend/app/services/zep_graphiti_impl.py`
+- `backend/app/services/graphiti_patch.py`
+
+**为什么做**：
+- MVP 功能跑通后，需要提升稳定性和可维护性
+- 减少边界条件下的隐蔽 bug
+
+**做了什么**：
+
+| 改动 | 说明 |
+|------|------|
+| 初始化锁 | `_ensure_initialized()` 双重检查锁定，防止并发首请求重复初始化 |
+| 退出清理 | `atexit` + `_shutdown_async_loop()`，进程退出时优雅关闭 driver/loop |
+| shutting_down flag | 防止退出期间 `__del__`/`close` 重启 loop |
+| is_alive 检查 | `join()` 后检查线程状态，日志准确反映退出结果 |
+| fail-fast | 非 shutdown 场景 loop 不可用时抛 `RuntimeError`，避免 `None` 连环炸 |
+| Patch Guard | 函数签名校验 + `GRAPHITI_DISABLE_PATCH` 开关，防止 upstream 升级后 patch 静默失效 |
+| 配置外部化 | `GRAPHITI_ASYNC_TIMEOUT` / `GRAPHITI_EMBEDDING_BATCH_SIZE` 环境变量 |
+| batch_size clamp | `min(..., 10)` 强制限制，防止用户误配置超过 DashScope 限制 |
+
+**新增环境变量**：
+```bash
+GRAPHITI_ASYNC_TIMEOUT=300        # 异步操作超时（秒）
+GRAPHITI_EMBEDDING_BATCH_SIZE=10  # Embedding 批次大小（≤10，自动 clamp）
+GRAPHITI_DISABLE_PATCH=0          # 禁用 monkey-patch（upstream 修复后设为 1）
+```
+
+**有什么用**：
+- 并发安全：多个请求同时到达时不会重复初始化
+- 优雅退出：进程退出时不会卡死或报错
+- 可配置：超时和批次大小可通过环境变量调整
+- 防呆：配置错误时有明确的错误信息或自动修正
+
+---
+
 ## 新增文件
 
 | 文件 | 用途 |
@@ -161,6 +199,6 @@ echo "模拟环境: $(.venv-simulation/bin/python -c 'import neo4j; print(neo4j.
 
 1. **串行执行**：所有 Graphiti 操作在单后台线程串行执行，高并发场景可能成为瓶颈
 2. **Flask + 异步**：架构上的妥协，长期建议图谱服务独立化
-3. **硬编码配置**：部分配置（超时、批次大小）硬编码在代码中
+3. ~~**硬编码配置**~~：已通过环境变量外部化解决（见 Hardening 改进）
 
 详见 [TODO.md](TODO.md) 了解后续优化计划。
