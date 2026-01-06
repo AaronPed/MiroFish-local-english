@@ -84,6 +84,9 @@ class DashScopeEmbedderWrapper:
 
 位置：`backend/app/services/zep_graphiti_impl.py`
 
+可选配置：
+- `GRAPHITI_EMBEDDING_BATCH_SIZE`：控制分块大小（默认 10；DashScope 最大 10，代码会自动 clamp）
+
 ---
 
 ## 3. Flask 同步框架 + Graphiti 异步库的事件循环冲突
@@ -118,9 +121,13 @@ Flask 请求线程 ────────────────────�
 实现代码：
 
 ```python
+import os
+import time
+
 _async_loop: Optional[asyncio.AbstractEventLoop] = None
 _async_thread: Optional[threading.Thread] = None
 _init_lock = threading.Lock()
+_shutting_down = False
 
 def _start_async_loop():
     """在后台线程中启动事件循环"""
@@ -132,8 +139,12 @@ def _start_async_loop():
 def _ensure_async_loop():
     """确保后台事件循环已启动"""
     global _async_thread
+    if _shutting_down:
+        return
     if _async_thread is None or not _async_thread.is_alive():
         with _init_lock:
+            if _shutting_down:
+                return
             if _async_thread is None or not _async_thread.is_alive():
                 _async_thread = threading.Thread(
                     target=_start_async_loop,
@@ -146,9 +157,14 @@ def _ensure_async_loop():
 
 def _run_async(coro):
     """在同步上下文中运行异步协程"""
+    if _shutting_down:
+        return None
     _ensure_async_loop()
+    if _async_loop is None or not _async_loop.is_running():
+        raise RuntimeError("Graphiti 事件循环不可用（初始化失败或已停止）")
+    timeout = int(os.environ.get('GRAPHITI_ASYNC_TIMEOUT', '300'))
     future = asyncio.run_coroutine_threadsafe(coro, _async_loop)
-    return future.result(timeout=300)
+    return future.result(timeout=timeout)
 ```
 
 **关键点**：
@@ -157,6 +173,7 @@ def _run_async(coro):
 - Flask 通过 `run_coroutine_threadsafe` 提交任务
 - Neo4j driver 始终绑定同一循环
 - 串行执行对 MVP 场景足够，如需并发可扩展为 loop pool
+- `GRAPHITI_ASYNC_TIMEOUT` 可配置同步等待超时（默认 300s）
 
 位置：`backend/app/services/zep_graphiti_impl.py`
 

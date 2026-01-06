@@ -89,9 +89,9 @@ def _ensure_async_loop():
 | 当前位置 | 配置项 | 应改为 |
 |---------|-------|-------|
 | `backend/app/config.py` | `NEO4J_PASSWORD` 默认值 `password` | 生产环境去掉默认值/强校验 |
-| `backend/app/services/zep_graphiti_impl.py` | `_run_async()` 超时 300s | 环境变量（例如 `GRAPHITI_ASYNC_CALL_TIMEOUT_S`） |
+| `backend/app/services/zep_graphiti_impl.py` | `_run_async()` 超时 300s | 环境变量（`GRAPHITI_ASYNC_TIMEOUT`，已实现） |
 | `backend/app/services/simulation_runner.py` | `.venv-simulation` fallback 路径 | 环境变量（已支持 `SIMULATION_PYTHON`，可补一键化脚本/校验） |
-| `backend/app/services/zep_graphiti_impl.py` | DashScope embedding `batch_size=10` | 环境变量（例如 `GRAPHITI_EMBEDDING_BATCH_SIZE`） |
+| `backend/app/services/zep_graphiti_impl.py` | DashScope embedding `batch_size=10` | 环境变量（`GRAPHITI_EMBEDDING_BATCH_SIZE`，已实现） |
 
 ### [ ] P1: 配置验证完善
 当前已有基础校验（`backend/app/config.py` 的 `Config.validate()`），建议补齐：
@@ -101,7 +101,7 @@ def _ensure_async_loop():
 ### [ ] P1: 环境变量命名收敛
 把分散的“默认值/魔法数字”收敛成明确的 env var（示例）：
 - `GRAPHITI_LOOP_STARTUP_TIMEOUT_S`
-- `GRAPHITI_ASYNC_CALL_TIMEOUT_S`
+- `GRAPHITI_ASYNC_TIMEOUT`
 - `GRAPHITI_EMBEDDING_BATCH_SIZE`（DashScope <= 10）
 - `SIMULATION_PYTHON`（仿真独立 venv）
 

@@ -463,6 +463,7 @@ MATCH (n:Entity {group_id: $group_id}) RETURN n
 - 不使用 `asyncio.run()`（它会创建/关闭新 loop，容易触发 Neo4j driver “跨 loop 绑定”问题）
 - 在适配器层提供 `_run_async()`：统一把异步调用丢到专用后台线程/事件循环里执行（避免 running loop/跨 loop 绑定问题）
 - 参考实现：`backend/app/services/zep_graphiti_impl.py` 的 `_run_async()`（已处理上述场景）
+- 可配置：`GRAPHITI_ASYNC_TIMEOUT`（默认 300s）
 
 ### 7.4 LLM 配置对齐（MVP 中风险）
 
@@ -558,6 +559,7 @@ Full parity 需要把这个 workaround 收敛为可维护方案：
 - 优先：升级到包含官方修复的 `graphiti-core` 版本并删除 patch
 - 次选：短期维持 patch，但加上版本/签名校验与开关（避免 silently broken）
 - 兜底：维护一个小型 fork（锁定版本 + 自己 backport 修复），确保可复现构建
+- 可配置：`GRAPHITI_DISABLE_PATCH=1` 可禁用该 patch（禁用后可能恢复写入失败，建议仅用于验证 upstream 修复）
 
 ### 7.7 DashScope embeddings 批量限制（P0：DashScope 下必须处理）
 
@@ -580,7 +582,7 @@ Error code: 400 - batch size is invalid, it should not be larger than 10
 
 Full parity 建议：
 
-- 把批量上限收敛成可配置项（例如 `GRAPHITI_EMBEDDING_BATCH_SIZE`），并在文档/启动脚本中明确写出默认值与适用范围。
+- 把批量上限收敛成可配置项（`GRAPHITI_EMBEDDING_BATCH_SIZE`，默认 10；DashScope 最大 10，代码会自动 clamp）。
 
 ---
 
@@ -606,6 +608,9 @@ export LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 export LLM_MODEL_NAME=qwen3-max
 export GRAPHITI_LLM_MODEL=qwen3-max
 export GRAPHITI_EMBEDDING_MODEL=text-embedding-v4
+export GRAPHITI_ASYNC_TIMEOUT=300
+export GRAPHITI_EMBEDDING_BATCH_SIZE=10
+# export GRAPHITI_DISABLE_PATCH=1  # 如需验证 upstream 是否已修复 Issue #683
 
 # 4. 安装依赖
 # 注意：graphiti 与 oasis 目前存在 neo4j driver 冲突，建议分 venv/容器

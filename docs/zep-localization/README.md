@@ -95,6 +95,9 @@ uv run python run.py
 | `OPENAI_BASE_URL` | Graphiti 用的 OpenAI-compatible Base URL（未设置时自动继承 `LLM_BASE_URL`） | - |
 | `GRAPHITI_LLM_MODEL` | Graphiti 使用的 LLM 模型名（推荐显式设置） | 继承 `LLM_MODEL_NAME` |
 | `GRAPHITI_EMBEDDING_MODEL` | Graphiti 使用的 embedding 模型名（DashScope 推荐 `text-embedding-v4`） | Graphiti 默认值 |
+| `GRAPHITI_ASYNC_TIMEOUT` | Graphiti 异步调用超时（秒） | `300` |
+| `GRAPHITI_EMBEDDING_BATCH_SIZE` | DashScope embeddings 分块大小（最大 10；会自动 clamp） | `10` |
+| `GRAPHITI_DISABLE_PATCH` | 禁用 graphiti-core workaround（Issue #683） | `0` |
 
 ## 已知限制
 
@@ -102,6 +105,7 @@ uv run python run.py
 
 在部分 `graphiti-core` 版本中，`add_episode()` 写入 Neo4j 时会尝试保存嵌套 map（Neo4j property 不支持），导致写入失败。
 当前在 MiroFish 内部通过 `backend/app/services/graphiti_patch.py` 做了 sanitize（嵌套 dict/list → JSON 字符串）来避免阻塞。
+如需临时禁用该 patch（例如验证 upstream 是否已修复），可设置 `GRAPHITI_DISABLE_PATCH=1`（禁用后可能会恢复写入失败）。
 
 ### 2) 依赖冲突（Full parity 的阻塞点）
 
