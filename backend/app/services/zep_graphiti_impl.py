@@ -259,7 +259,7 @@ class GraphitiClient(ZepClientAdapter):
         from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 
         api_key = os.environ.get('OPENAI_API_KEY')
-        base_url = os.environ.get('OPENAI_BASE_URL')
+        base_url = os.environ.get('EMBEDDING_BASE_URL') or os.environ.get('OPENAI_BASE_URL')
         model = os.environ.get('GRAPHITI_LLM_MODEL') or os.environ.get('LLM_MODEL_NAME')
         small_model = os.environ.get('GRAPHITI_LLM_SMALL_MODEL') or None
 
