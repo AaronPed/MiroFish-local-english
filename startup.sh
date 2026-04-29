@@ -84,7 +84,7 @@ if [ -f ~/code/llama.cpp/build/bin/llama-server ]; then
         --reasoning off \
         -np 8 \
         -cb \
-        -c 16384 \
+        -c 32768 \
         -b 512 \
         --mlock \
         > /tmp/llama-server.log 2>&1 &
