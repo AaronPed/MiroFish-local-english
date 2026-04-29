@@ -58,6 +58,7 @@
           :graphData="graphData"
           :systemLogs="systemLogs"
           @next-step="handleNextStep"
+          @retry-build="handleRetryBuild"
         />
         <!-- Step 2: Environment Setup -->
         <Step2EnvSetup
@@ -154,6 +155,12 @@ const toggleMaximize = (target) => {
   } else {
     viewMode.value = target
   }
+}
+
+const handleRetryBuild = async () => {
+  addLog('Retrying graph build...')
+  error.value = ''
+  await startBuildGraph(true)
 }
 
 const handleNextStep = (params = {}) => {
@@ -268,13 +275,13 @@ const updatePhaseByStatus = (status) => {
   }
 }
 
-const startBuildGraph = async () => {
+const startBuildGraph = async (force = false) => {
   try {
     currentPhase.value = 1
     buildProgress.value = { progress: 0, message: 'Starting build...' }
     addLog('Initiating graph build...')
     
-    const res = await buildGraph({ project_id: currentProjectId.value })
+    const res = await buildGraph({ project_id: currentProjectId.value, force })
     if (res.success) {
       addLog(`Graph build task started. Task ID: ${res.data.task_id}`)
       startGraphPolling()

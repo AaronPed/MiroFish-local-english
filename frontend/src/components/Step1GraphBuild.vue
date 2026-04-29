@@ -140,6 +140,46 @@
               <span class="stat-label">SCHEMAType</span>
             </div>
           </div>
+
+          <!-- Build / Retry Button -->
+          <div v-if="projectData?.status === 'failed' || (currentPhase === 0 && projectData?.ontology)" class="action-row">
+            <button
+              class="action-btn build-btn"
+              :disabled="currentPhase === 1"
+              @click="openConfirmDialog"
+            >
+              <span v-if="currentPhase === 1" class="spinner-sm"></span>
+              {{ currentPhase === 1 ? 'Building...' : (projectData?.status === 'failed' ? 'Retry Graph Build' : 'Build Graph') }}
+            </button>
+            <span v-if="projectData?.status === 'failed' && projectData?.error" class="error-hint">
+              Previous build failed. Click to retry.
+            </span>
+          </div>
+
+          <!-- Confirm Dialog -->
+          <div v-if="showConfirmDialog" class="dialog-overlay" @click.self="showConfirmDialog = false">
+            <div class="dialog-box">
+              <div class="dialog-header">
+                <span class="dialog-title">Confirm Graph Build</span>
+                <button class="close-btn" @click="showConfirmDialog = false">&times;</button>
+              </div>
+              <div class="dialog-body">
+                <p v-if="projectData?.status === 'failed'">
+                  The previous graph build failed. Retrying will clear the partial graph and start fresh.
+                </p>
+                <p v-else>
+                  This will start building the knowledge graph from your uploaded documents. This process may take several minutes.
+                </p>
+                <div v-if="projectData?.error" class="dialog-error">
+                  <strong>Previous error:</strong> {{ projectData.error }}
+                </div>
+              </div>
+              <div class="dialog-footer">
+                <button class="dialog-btn secondary" @click="showConfirmDialog = false">Cancel</button>
+                <button class="dialog-btn primary" @click="confirmRetry">{{ projectData?.status === 'failed' ? 'Retry' : 'Start Build' }}</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -202,11 +242,21 @@ const props = defineProps({
   systemLogs: { type: Array, default: () => [] }
 })
 
-defineEmits(['next-step'])
+defineEmits(['next-step', 'retry-build'])
 
 const selectedOntologyItem = ref(null)
 const logContent = ref(null)
 const creatingSimulation = ref(false)
+const showConfirmDialog = ref(false)
+
+const openConfirmDialog = () => {
+  showConfirmDialog.value = true
+}
+
+const confirmRetry = () => {
+  showConfirmDialog.value = false
+  emit('retry-build')
+}
 
 // Enter environment setup - create simulation and navigate
 const handleEnterEnvSetup = async () => {
@@ -694,5 +744,122 @@ watch(() => props.systemLogs.length, () => {
 .log-msg {
   color: #CCC;
   word-break: break-all;
+}
+
+/* Confirm Dialog */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-box {
+  background: #fff;
+  border-radius: 8px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.dialog-body {
+  padding: 20px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dialog-body p {
+  margin: 0 0 12px 0;
+}
+
+.dialog-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 4px;
+  color: #cf1322;
+  font-size: 12px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px 16px;
+}
+
+.dialog-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.dialog-btn.secondary {
+  background: #fff;
+  border-color: #d9d9d9;
+  color: #555;
+}
+
+.dialog-btn.secondary:hover {
+  border-color: #999;
+  color: #333;
+}
+
+.dialog-btn.primary {
+  background: #1677ff;
+  color: #fff;
+}
+
+.dialog-btn.primary:hover {
+  background: #4096ff;
+}
+
+.action-row {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.build-btn {
+  background: #1677ff;
+  color: #fff;
+  border: none;
+}
+
+.build-btn:hover:not(:disabled) {
+  background: #4096ff;
+}
+
+.error-hint {
+  font-size: 12px;
+  color: #cf1322;
 }
 </style>
