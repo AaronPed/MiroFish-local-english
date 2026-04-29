@@ -81,6 +81,7 @@ if [ -f ~/code/llama.cpp/build/bin/llama-server ]; then
         -ngl 999 \
         --device ROCm0 \
         --flash-attn on \
+        --reasoning off \
         -np 8 \
         -cb \
         -c 16384 \
