@@ -18,7 +18,7 @@
         <div class="card-content">
           <p class="api-note">POST /api/graph/ontology/generate</p>
           <p class="description">
-            LLMAnalyze DocContent与SimRequirements，Extract出Reality Seed，AutoGenerate合适's OntologyStructure
+            LLM analyzes doc content and sim requirements, extracts reality seed, auto-generates suitable ontology structure
           </p>
 
           <!-- Loading / Progress -->
@@ -122,7 +122,7 @@
         <div class="card-content">
           <p class="api-note">POST /api/graph/build</p>
           <p class="description">
-            Based onGenerate's Ontology，将DocsAuto分块后Invoke Zep BuildKnowledge Graph，ExtractEntity和Relation，并形成时序Memory与社区Summary
+            Based on generated ontology, auto-chunk docs and invoke API to build knowledge graph, extract entities and relations, and form temporal memory with community summary
           </p>
           
           <!-- Stats Cards -->
@@ -157,14 +157,14 @@
         
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
-          <p class="description">Graph BuildCompleted，请Enter下一步ProceedSimEnvironment Setup</p>
+          <p class="description">Graph build complete. Please proceed to simulation environment setup</p>
           <button 
             class="action-btn" 
             :disabled="currentPhase < 2 || creatingSimulation"
             @click="handleEnterEnvSetup"
           >
             <span v-if="creatingSimulation" class="spinner-sm"></span>
-            {{ creatingSimulation ? 'Create中...' : 'Enter Environment Setup ➝' }}
+            {{ creatingSimulation ? 'Creating...' : 'Enter Environment Setup ➝' }}
           </button>
         </div>
       </div>
@@ -208,10 +208,10 @@ const selectedOntologyItem = ref(null)
 const logContent = ref(null)
 const creatingSimulation = ref(false)
 
-// Enter Environment Setup - Create simulation 并跳转
+// Enter environment setup - create simulation and navigate
 const handleEnterEnvSetup = async () => {
   if (!props.projectData?.project_id || !props.projectData?.graph_id) {
-    console.error('缺少Project或GraphInfo')
+    console.error('Missing project or graph info')
     return
   }
   

@@ -16,7 +16,7 @@
         <div class="hero-left">
           <div class="tag-row">
             <span class="orange-tag">Universal Swarm Intelligence</span>
-            <span class="version-text">/ V1.0-Preview版</span>
+            <span class="version-text">/ V1.0-Preview</span>
           </div>
           
           <h1 class="main-title">
@@ -26,10 +26,10 @@
           
           <div class="hero-desc">
             <p>
-              即使Only一段文字，<span class="highlight-bold">MiroFish</span> 也能Based on其中's Reality Seed，全AutoGenerate与之对应's 至多<span class="highlight-orange">百万级Agent</span>构成's 平行World。Via上帝视角注入变量，在复杂's 群体交互中寻找动态Environment下's <span class="highlight-code">“局部最优解”</span>
+              Even with just one text, <span class="highlight-bold">MiroFish</span> can AutoGenerate a parallel World of up to <span class="highlight-orange">millions of Agents</span> based on its Reality Seed. Inject variables from a god's-eye view to find <span class="highlight-code">"local optimal solutions"</span> in dynamic Environments through complex group interactions.
             </p>
             <p class="slogan-text">
-              让未来在 Agent 群中预演，让决策在百战后胜出<span class="blinking-cursor">_</span>
+              Rehearse the future in Agent swarms, let decisions win after a hundred battles<span class="blinking-cursor">_</span>
             </p>
           </div>
            
@@ -58,7 +58,7 @@
           
           <h2 class="section-title">Ready</h2>
           <p class="section-desc">
-            预测Engine待命中，可Upload多份非Structure化Data以InitializeSim序列
+            Prediction Engine on standby. Upload multiple unstructured Data files to initialize the Sim sequence
           </p>
           
           <!-- Metric Cards -->
@@ -148,8 +148,8 @@
                 
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
-                  <div class="upload-title">拖拽FileUpload</div>
-                  <div class="upload-hint">或Click浏览File系统</div>
+                  <div class="upload-title">Drag & Drop Files</div>
+                  <div class="upload-hint">or Click to browse Files</div>
                 </div>
                 
                 <div v-else class="file-list">
@@ -162,7 +162,7 @@
               </div>
             </div>
 
-            <!-- Split线 -->
+            <!-- Divider -->
             <div class="console-divider">
               <span>InputParams</span>
             </div>
@@ -170,13 +170,13 @@
             <!-- InputZone -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">>_ 02 / SimHint词</span>
+                <span class="console-label">>_ 02 / Sim Prompt</span>
               </div>
               <div class="input-wrapper">
                 <textarea
                   v-model="formData.simulationRequirement"
                   class="code-input"
-                  placeholder="// 用自然LanguageInputSim或预测Requirements（例.武大若PublishUndo肖某处分's 公告，会引发什么舆情走向）"
+                  placeholder="// Use natural language to input Sim or prediction requirements (e.g. if university X publishes a reversal of student Y's disciplinary action, what public opinion trends would emerge?)"
                   rows="6"
                   :disabled="loading"
                 ></textarea>
@@ -192,7 +192,7 @@
                 :disabled="!canSubmit || loading"
               >
                 <span v-if="!loading">LaunchEngine</span>
-                <span v-else>Initialize中...</span>
+                <span v-else>Initializing...</span>
                 <span class="btn-arrow">→</span>
               </button>
             </div>
@@ -209,7 +209,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// 表单Data
+// Form Data
 const formData = ref({
   simulationRequirement: ''
 })
@@ -222,15 +222,15 @@ const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
 
-// FileInput引用
+// File Input ref
 const fileInput = ref(null)
 
-// Computed Property:Whether可以Submit
+// Computed: whether submittable
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
 
-// 触发FileSelect
+// Trigger file select
 const triggerFileInput = () => {
   if (!loading.value) {
     fileInput.value?.click()
@@ -243,7 +243,7 @@ const handleFileSelect = (event) => {
   addFiles(selectedFiles)
 }
 
-// Process拖拽相关
+// Handle drag & drop
 const handleDragOver = (e) => {
   if (!loading.value) {
     isDragOver.value = true
@@ -276,7 +276,7 @@ const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-// 滚动到底部
+// Scroll to bottom
 const scrollToBottom = () => {
   window.scrollTo({
     top: document.body.scrollHeight,
@@ -284,15 +284,15 @@ const scrollToBottom = () => {
   })
 }
 
-// Start Simulation - Now跳转，APIInvoke在ProcessPageProceed
+// Start Simulation - jump now, API calls handled in Process page
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
   
-  // 存储待Upload's Data
+  // Store pending upload data
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement)
     
-    // NowJump toProcessPage（Use特殊标识RepresentsNewProject）
+    // Jump to Process page (use special flag to represent new project)
     router.push({
       name: 'Process',
       params: { projectId: 'new' }
@@ -302,7 +302,7 @@ const startSimulation = () => {
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
+/* Global vars & reset */
 :root {
   --black: #000000;
   --white: #FFFFFF;
@@ -311,8 +311,8 @@ const startSimulation = () => {
   --gray-text: #666666;
   --border: #E5E5E5;
   /* 
-    Use Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/Tag字体
-    确保已在 index.html 引入这些 Google Fonts 
+    Use Space Grotesk for main headings, JetBrains Mono for code/tags
+    Ensure these Google Fonts are included in index.html 
   */
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
@@ -326,7 +326,7 @@ const startSimulation = () => {
   color: var(--black);
 }
 
-/* 顶部导航 */
+/* Top nav */
 .navbar {
   height: 60px;
   background: var(--black);
@@ -369,7 +369,7 @@ const startSimulation = () => {
   font-family: sans-serif;
 }
 
-/* 主要Content区 */
+/* Main content area */
 .main-content {
   max-width: 1400px;
   margin: 0 auto;
@@ -507,7 +507,7 @@ const startSimulation = () => {
 }
 
 .hero-logo {
-  max-width: 500px; /* 调整logo大小 */
+  max-width: 500px; /* Adjust logo size */
   width: 100%;
 }
 
@@ -662,8 +662,8 @@ const startSimulation = () => {
 }
 
 .console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
+  border: 1px solid #CCC; /* Outer solid border */
+  padding: 8px; /* Padding for double border feel */
 }
 
 .console-section {
@@ -826,7 +826,7 @@ const startSimulation = () => {
   overflow: hidden;
 }
 
-/* 可ClickStatus（非禁用） */
+/* Clickable state (not disabled) */
 .start-engine-btn:not(:disabled) {
   background: var(--black);
   border: 1px solid var(--black);
@@ -851,14 +851,14 @@ const startSimulation = () => {
   border: 1px solid #E5E5E5;
 }
 
-/* 引导动画：微妙's 边框脉冲 */
+/* Guide animation: subtle border pulse */
 @keyframes pulse-border {
   0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
   70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
 }
 
-/* 响应式适配 */
+/* Responsive */
 @media (max-width: 1024px) {
   .dashboard-section {
     flex-direction: column;

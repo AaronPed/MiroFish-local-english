@@ -4,7 +4,7 @@
     <nav class="navbar">
       <div class="nav-brand" @click="goHome">MIROFISH</div>
       
-      <!-- 中间Step指示器 -->
+      <!-- Step indicator -->
       <div class="nav-center">
         <div class="step-badge">STEP 01</div>
         <div class="step-name">Graph Build</div>
@@ -18,7 +18,7 @@
 
     <!-- Main Content -->
     <div class="main-content">
-      <!-- Left: LiveGraph展示 -->
+      <!-- Left: Live Graph display -->
       <div class="left-panel" :class="{ 'full-screen': isFullScreen }">
         <div class="panel-header">
           <div class="header-left">
@@ -44,10 +44,10 @@
         </div>
         
         <div class="graph-container" ref="graphContainer">
-          <!-- Graph可视化（只要有Data就Display） -->
+          <!-- Graph visualization (display whenever data exists) -->
           <div v-if="graphData" class="graph-view">
             <svg ref="graphSvg" class="graph-svg"></svg>
-            <!-- Build中Hint -->
+            <!-- Building hint -->
             <div v-if="currentPhase === 1" class="graph-building-hint">
               <span class="building-dot"></span>
               Updating......
@@ -190,10 +190,10 @@
               </svg>
             </div>
             <p class="waiting-text">Waiting for Ontology...</p>
-            <p class="waiting-hint">GenerateComplete后将AutoStartBuildGraph</p>
+            <p class="waiting-hint">Auto-start graph build after generation completes</p>
           </div>
           
-          <!-- Build中但还没有Data -->
+          <!-- Building but no data yet -->
           <div v-else-if="currentPhase === 1 && !graphData" class="graph-waiting">
             <div class="loading-animation">
               <div class="loading-ring"></div>
@@ -246,7 +246,7 @@
               <div class="detail-section">
                 <div class="detail-label">API Docs</div>
                 <div class="detail-content">
-                  UploadDocs后，LLMAnalyze DocContent，AutoGenerate适合舆论Sim's OntologyStructure（Entity Type + Relation Type）
+                  After uploading docs, LLM analyzes content and auto-generates an ontology structure (Entity Type + Relation Type) for the sim
                 </div>
               </div>
               
@@ -259,7 +259,7 @@
                 </div>
               </div>
               
-              <!-- 已Generate's OntologyInfo -->
+              <!-- Generated ontology info -->
               <div class="detail-section" v-if="projectData?.ontology">
                 <div class="detail-label">Generate's Entity Type ({{ projectData.ontology.entity_types?.length || 0 }})</div>
                 <div class="entity-tags">
@@ -288,7 +288,7 @@
                     <span class="rel-target">{{ rel.target_type }}</span>
                   </div>
                   <div v-if="(projectData.ontology.relation_types?.length || 0) > 5" class="relation-more">
-                    +{{ projectData.ontology.relation_types.length - 5 }} 更多Relation...
+                    +{{ projectData.ontology.relation_types.length - 5 }} More relations...
                   </div>
                 </div>
               </div>
@@ -317,7 +317,7 @@
               <div class="detail-section">
                 <div class="detail-label">API Docs</div>
                 <div class="detail-content">
-                  Based onGenerate's Ontology，将Docs分块后Invoke Zep API BuildKnowledge Graph，ExtractEntity和Relation
+                  Based on generated ontology, chunk docs and invoke API to build knowledge graph, extracting entities and relations
                 </div>
               </div>
               
@@ -364,7 +364,7 @@
               <span class="phase-num">03</span>
               <div class="phase-info">
                 <div class="phase-title">Build Complete</div>
-                <div class="phase-api">ReadyEnter下一Step</div>
+                <div class="phase-api">Ready for next step</div>
               </div>
               <span class="phase-status" :class="getPhaseStatusClass(2)">
                 {{ getPhaseStatusText(2) }}
@@ -389,7 +389,7 @@
           </div>
           <div class="project-details" v-if="projectData">
             <div class="project-item">
-              <span class="item-label">Project名称</span>
+              <span class="item-label">Project Name</span>
               <span class="item-value">{{ projectData.name }}</span>
             </div>
             <div class="project-item">
@@ -421,7 +421,7 @@ import * as d3 from 'd3'
 const route = useRoute()
 const router = useRouter()
 
-// CurrentProjectID（可能从'new'变为实际ID）
+// Current project ID (may change from 'new' to actual ID)
 const currentProjectId = ref(route.params.projectId)
 
 // Status
@@ -432,8 +432,8 @@ const projectData = ref(null)
 const graphData = ref(null)
 const buildProgress = ref(null)
 const ontologyProgress = ref(null) // Ontology Progress
-const currentPhase = ref(-1) // -1: Upload中, 0: Ontology Generation中, 1: Graph Build, 2: Complete
-const selectedItem = ref(null) // Selected's Nodes或边
+const currentPhase = ref(-1) // -1: uploading, 0: ontology generation, 1: graph build, 2: complete
+const selectedItem = ref(null) // Selected nodes or edges
 const isFullScreen = ref(false)
 
 // DOM引用
@@ -454,7 +454,7 @@ const statusText = computed(() => {
   if (error.value) return 'BuildFailed'
   if (currentPhase.value >= 2) return 'Build Complete'
   if (currentPhase.value === 1) return 'Building Graph...'
-  if (currentPhase.value === 0) return 'Ontology Generation中'
+  if (currentPhase.value === 0) return 'Ontology generating'
   return 'Initialize中'
 })
 
@@ -498,7 +498,7 @@ const closeDetailPanel = () => {
   selectedItem.value = null
 }
 
-// Format化Date
+// Format date
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   try {
@@ -525,7 +525,7 @@ const selectNode = (nodeData, color) => {
   }
 }
 
-// Selected边
+// Selected edge
 const selectEdge = (edgeData) => {
   selectedItem.value = {
     type: 'edge',
@@ -547,15 +547,15 @@ const getPhaseStatusText = (phase) => {
     }
     return 'In Progress'
   }
-  return 'Waiting中'
+  return 'Waiting'
 }
 
-// Initialize - Process NewProject或LoadExistingProject
+// Initialize - process new project or load existing
 const initProject = async () => {
   const paramProjectId = route.params.projectId
   
   if (paramProjectId === 'new') {
-    // NewProject：从 store Fetch待Upload's Data
+    // New project: fetch pending upload data from store
     await handleNewProject()
   } else {
     // LoadExistingProject
@@ -569,7 +569,7 @@ const handleNewProject = async () => {
   const pending = getPendingUpload()
   
   if (!pending.isPending || pending.files.length === 0) {
-    error.value = '没有待Upload's File，请BackHome重新操作'
+    error.value = 'No pending upload file, please go back home and retry'
     loading.value = false
     return
   }
@@ -577,7 +577,7 @@ const handleNewProject = async () => {
   try {
     loading.value = true
     currentPhase.value = 0 // Ontology GenerationStage
-    ontologyProgress.value = { message: 'LoadingUploadFile并Analyze Doc...' }
+    ontologyProgress.value = { message: 'Loading upload file and analyzing doc...' }
     
     // Build FormData
     const formDataObj = new FormData()
@@ -590,14 +590,14 @@ const handleNewProject = async () => {
     const response = await generateOntology(formDataObj)
     
     if (response.success) {
-      // 清除待UploadData
+      // Clear pending upload data
       clearPendingUpload()
       
-      // UpdateProjectID和Data
+      // Update project ID and data
       currentProjectId.value = response.data.project_id
       projectData.value = response.data
       
-      // UpdateURL（不RefreshPage）
+      // Update URL (no page refresh)
       router.replace({
         name: 'Process',
         params: { projectId: response.data.project_id }
@@ -633,7 +633,7 @@ const loadProject = async () => {
         await startBuildGraph()
       }
       
-      // 继续PollingBuild中's Task
+      // Continue polling build task
       if (response.data.status === 'graph_building' && response.data.graph_build_task_id) {
         currentPhase.value = 1
         startPollingTask(response.data.graph_build_task_id)
@@ -688,10 +688,10 @@ const startBuildGraph = async () => {
     if (response.success) {
       buildProgress.value.message = 'Graph BuildTask Started...'
       
-      // 保存 task_id Used forPolling
+      // Save task_id for polling
       const taskId = response.data.task_id
       
-      // LaunchGraphDataPolling（独立于TaskStatusPolling）
+      // Launch graph data polling (independent of task status polling)
       startGraphPolling()
       
       // LaunchTaskStatusPolling
@@ -715,13 +715,13 @@ const startGraphPolling = () => {
   // NowFetchOnce
   fetchGraphData()
   
-  // 每 10 秒AutoFetchOnceGraphData
+  // Auto-fetch graph data every 10s
   graphPollTimer = setInterval(async () => {
     await fetchGraphData()
   }, 10000)
 }
 
-// 手动Refresh Graph
+// Manual refresh graph
 const refreshGraph = async () => {
   graphLoading.value = true
   await fetchGraphData()
@@ -739,7 +739,7 @@ const stopGraphPolling = () => {
 // Fetch Graph Data
 const fetchGraphData = async () => {
   try {
-    // 先FetchProjectInfo以Fetch graph_id
+    // First fetch project info to get graph_id
     const projectResponse = await getProject(currentProjectId.value)
     
     if (projectResponse.success && projectResponse.data.graph_id) {
@@ -756,7 +756,7 @@ const fetchGraphData = async () => {
         
         console.log('Fetching graph data, nodes:', newNodeCount, 'edges:', newData.edge_count || newData.edges?.length || 0)
         
-        // Data有Change时UpdateRender
+        // Update render when data changes
         if (newNodeCount !== oldNodeCount || !graphData.value) {
           graphData.value = newData
           await nextTick()
@@ -771,10 +771,10 @@ const fetchGraphData = async () => {
 
 // PollingTaskStatus
 const startPollingTask = (taskId) => {
-  // Now执行OnceQuery
+  // Execute one query now
   pollTaskStatus(taskId)
   
-  // 然后定时Polling
+  // Then start periodic polling
   pollTimer = setInterval(() => {
     pollTaskStatus(taskId)
   }, 2000)
@@ -791,7 +791,7 @@ const pollTaskStatus = async (taskId) => {
       // UpdateProgressDisplay
       buildProgress.value = {
         progress: task.progress || 0,
-        message: task.message || 'Process中...'
+        message: task.message || 'Processing...'
       }
       
       console.log('Task status:', task.status, 'Progress:', task.progress)
@@ -803,18 +803,18 @@ const pollTaskStatus = async (taskId) => {
         stopGraphPolling()
         currentPhase.value = 2
         
-        // UpdateProgressDisplay为CompleteStatus
+        // Update progress display to complete status
         buildProgress.value = {
           progress: 100,
           message: 'Build Complete，LoadingLoadGraph...'
         }
         
-        // 重新LoadProjectDataFetch graph_id
+        // Reload project data to fetch graph_id
         const projectResponse = await getProject(currentProjectId.value)
         if (projectResponse.success) {
           projectData.value = projectResponse.data
           
-          // 最终LoadFullGraphData
+          // Finally load full graph data
           if (projectResponse.data.graph_id) {
             console.log('📊 LoadFullGraph:', projectResponse.data.graph_id)
             await loadGraph(projectResponse.data.graph_id)
@@ -822,7 +822,7 @@ const pollTaskStatus = async (taskId) => {
           }
         }
         
-        // 清除ProgressDisplay
+        // Clear progress display
         buildProgress.value = null
       } else if (task.status === 'failed') {
         stopPolling()
@@ -874,7 +874,7 @@ const renderGraph = () => {
     return
   }
   
-  // Fetch容器尺寸
+  // Fetch container size
   const rect = container.getBoundingClientRect()
   const width = rect.width || 800
   const height = (rect.height || 600) - 60
@@ -899,7 +899,7 @@ const renderGraph = () => {
   
   if (nodesData.length === 0) {
     console.log('No nodes to render')
-    // Display空Status
+    // Display empty status
     svg.append('text')
       .attr('x', width / 2)
       .attr('y', height / 2)
@@ -909,7 +909,7 @@ const renderGraph = () => {
     return
   }
   
-  // CreateNodes映射Used for查找名称
+  // Create node name lookup map
   const nodeMap = {}
   nodesData.forEach(n => {
     nodeMap[n.uuid] = n
@@ -917,12 +917,12 @@ const renderGraph = () => {
   
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || '未命名',
+    name: n.name || 'Unnamed',
     type: n.labels?.find(l => l !== 'Entity' && l !== 'Node') || 'Entity',
-    rawData: n // 保存原始Data
+    rawData: n // Save raw data
   }))
   
-  // CreateNodesID集合Used for过滤有效边
+  // Create node ID set for filtering valid edges
   const nodeIds = new Set(nodes.map(n => n.id))
   
   const edges = edgesData
@@ -940,13 +940,13 @@ const renderGraph = () => {
   
   console.log('Nodes:', nodes.length, 'Edges:', edges.length)
   
-  // 颜色映射
+  // Color mapping
   const types = [...new Set(nodes.map(n => n.type))]
   const colorScale = d3.scaleOrdinal()
     .domain(types)
     .range(['#FF6B35', '#004E89', '#7B2D8E', '#1A936F', '#C5283D', '#E9724C', '#2D3436', '#6C5CE7'])
   
-  // 力导向Layout
+  // Force-directed layout
   const simulation = d3.forceSimulation(nodes)
     .force('link', d3.forceLink(edges).id(d => d.id).distance(100).strength(0.5))
     .force('charge', d3.forceManyBody().strength(-300))
@@ -955,7 +955,7 @@ const renderGraph = () => {
     .force('x', d3.forceX(width / 2).strength(0.05))
     .force('y', d3.forceY(height / 2).strength(0.05))
   
-  // Add缩放功能
+  // Add zoom functionality
   const g = svg.append('g')
   
   svg.call(d3.zoom()
@@ -965,7 +965,7 @@ const renderGraph = () => {
       g.attr('transform', event.transform)
     }))
   
-  // 绘制边（Contains可Click's 透明宽线）
+  // Draw edges (including clickable transparent wide lines)
   const linkGroup = g.append('g')
     .attr('class', 'links')
     .selectAll('g')
@@ -978,18 +978,18 @@ const renderGraph = () => {
       selectEdge(d.rawData)
     })
   
-  // 可见's 细线
+  // Visible thin line
   const link = linkGroup.append('line')
     .attr('stroke', '#ccc')
     .attr('stroke-width', 1.5)
     .attr('stroke-opacity', 0.6)
   
-  // 透明's 宽线Used forClick
+  // Transparent wide line for clicking
   linkGroup.append('line')
     .attr('stroke', 'transparent')
     .attr('stroke-width', 10)
   
-  // 边Tag
+  // Edge label
   const linkLabel = g.append('g')
     .attr('class', 'link-labels')
     .selectAll('text')
@@ -1001,7 +1001,7 @@ const renderGraph = () => {
     .attr('text-anchor', 'middle')
     .text(d => d.type.length > 15 ? d.type.substring(0, 12) + '...' : d.type)
   
-  // 绘制Nodes
+  // Draw nodes
   const node = g.append('g')
     .attr('class', 'nodes')
     .selectAll('g')
@@ -1039,14 +1039,14 @@ const renderGraph = () => {
   })
   
   simulation.on('tick', () => {
-    // Update所有边's Position（包括可见线和透明ClickZone）
+    // Update all edge positions (visible lines and transparent click zones)
     linkGroup.selectAll('line')
       .attr('x1', d => d.source.x)
       .attr('y1', d => d.source.y)
       .attr('x2', d => d.target.x)
       .attr('y2', d => d.target.y)
     
-    // Update边TagPosition
+    // Update edge label position
     linkLabel
       .attr('x', d => (d.source.x + d.target.x) / 2)
       .attr('y', d => (d.source.y + d.target.y) / 2 - 5)
@@ -1079,7 +1079,7 @@ watch(graphData, () => {
   }
 })
 
-// 生命周期
+// Lifecycle
 onMounted(() => {
   initProject()
 })
@@ -1091,7 +1091,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 变量 */
+/* Variables */
 :root {
   --black: #000000;
   --white: #FFFFFF;
@@ -1108,7 +1108,7 @@ onUnmounted(() => {
   overflow: hidden; /* Prevent body scroll in fullscreen */
 }
 
-/* 导航栏 */
+/* Navbar */
 .navbar {
   display: flex;
   align-items: center;
@@ -1311,7 +1311,7 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Graph容器 */
+/* Graph container */
 .graph-container {
   flex: 1;
   position: relative;
@@ -1587,7 +1587,7 @@ onUnmounted(() => {
   border-bottom: 1px solid #E0E0E0;
 }
 
-/* Properties 属性List */
+/* Properties list */
 .properties-list {
   margin-top: 8px;
   padding: 10px;
@@ -1889,7 +1889,7 @@ onUnmounted(() => {
   color: #999;
 }
 
-/* Progress条 */
+/* Progress bar */
 .progress-bar {
   height: 6px;
   background: #E0E0E0;
@@ -2041,7 +2041,7 @@ onUnmounted(() => {
   color: #666;
 }
 
-/* 响应式 */
+/* Responsive */
 @media (max-width: 1024px) {
   .main-content {
     flex-direction: column;

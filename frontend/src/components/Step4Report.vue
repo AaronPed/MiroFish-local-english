@@ -127,7 +127,7 @@
             </div>
           </div>
 
-          <!-- Next Step Button - 在Complete后Display -->
+          <!-- Next step button - display after completion -->
           <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
             <span>EnterDeep Interaction</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -206,7 +206,7 @@
                     </div>
                   </template>
                   
-                  <!-- Section Complete (FullSectionGenerateComplete，含所有Subsection) -->
+                  <!-- Section complete (full section generation complete, including all subsections) -->
                   <template v-if="log.action === 'section_complete'">
                     <div class="section-tag completed">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -317,7 +317,7 @@
                         Final: {{ log.details?.has_final_answer ? 'Yes' : 'No' }}
                       </span>
                     </div>
-                    <!-- 当是Final Answer时，Display特殊Hint -->
+                    <!-- When final answer, display special hint -->
                     <div v-if="log.details?.has_final_answer" class="final-answer-hint">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -433,22 +433,22 @@ const showRawResult = reactive({})
 
 // Toggle functions
 const toggleRawResult = (timestamp, event) => {
-  // 保存按钮相对于视口's Position
+  // Save button position relative to viewport
   const button = event?.target
   const buttonRect = button?.getBoundingClientRect()
   const buttonTopBeforeToggle = buttonRect?.top
   
-  // 切换Status
+  // Toggle status
   showRawResult[timestamp] = !showRawResult[timestamp]
   
-  // Waiting DOM Update后，调整滚动Position以保持按钮在相同Position
+  // After DOM update, adjust scroll position to keep button at same position
   if (button && buttonTopBeforeToggle !== undefined && rightPanel.value) {
     nextTick(() => {
       const newButtonRect = button.getBoundingClientRect()
       const buttonTopAfterToggle = newButtonRect.top
       const scrollDelta = buttonTopAfterToggle - buttonTopBeforeToggle
       
-      // 调整滚动Position
+      // Adjust scroll position
       rightPanel.value.scrollTop += scrollDelta
     })
   }
@@ -466,7 +466,7 @@ const toggleSectionContent = (idx) => {
 }
 
 const toggleSectionCollapse = (idx) => {
-  // OnlyCompleted's Section才能折叠
+  // Only completed sections can be collapsed
   if (!generatedSections.value[idx + 1]) return
   const newSet = new Set(collapsedSections.value)
   if (newSet.has(idx)) {
@@ -499,32 +499,32 @@ const toolConfig = {
   'insight_forge': {
     name: 'Deep Insight',
     color: 'purple',
-    icon: 'lightbulb' // 灯泡图标 - 代表洞察
+    icon: 'lightbulb' // lightbulb icon - represents insight
   },
   'panorama_search': {
     name: 'Panorama Search',
     color: 'blue',
-    icon: 'globe' // 地球图标 - 代表全景Search
+    icon: 'globe' // globe icon - represents panoramic search
   },
   'interview_agents': {
     name: 'Agent Interview',
     color: 'green',
-    icon: 'users' // User图标 - 代表Chat
+    icon: 'users' // users icon - represents chat
   },
   'quick_search': {
     name: 'Quick Search',
     color: 'orange',
-    icon: 'zap' // 闪电图标 - 代表快速
+    icon: 'zap' // zap icon - represents speed
   },
   'get_graph_statistics': {
     name: 'Graph Stats',
     color: 'cyan',
-    icon: 'chart' // Chart图标 - 代表统计
+    icon: 'chart' // chart icon - represents statistics
   },
   'get_entities_by_type': {
     name: 'Entity Query',
     color: 'pink',
-    icon: 'database' // Data库图标 - 代表Entity
+    icon: 'database' // database icon - represents entity
   }
 }
 
@@ -561,7 +561,7 @@ const parseInsightForge = (text) => {
     const reqMatch = text.match(/Prediction Scenario:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
     
-    // Extract StatsData - 匹配"相关预测事实: X条"Format
+    // Extract stats data - match 'related prediction facts: X' format
     const factMatch = text.match(/相关预测事实:\s*(\d+)/)
     const entityMatch = text.match(/Related Entities:\s*(\d+)/)
     const relMatch = text.match(/Relation Chain:\s*(\d+)/)
@@ -576,7 +576,7 @@ const parseInsightForge = (text) => {
       result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
-    // Extract关键事实 - Full Extract, Unlimited
+    // Extract key facts - full extract, unlimited
     const factsSection = text.match(/### 【关键事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
@@ -586,11 +586,11 @@ const parseInsightForge = (text) => {
       }).filter(Boolean)
     }
     
-    // ExtractCore Entities - FullExtract，ContainsSummary和Related Facts数
+    // Extract core entities - full extract, contains summary and related facts count
     const entitySection = text.match(/### 【Core Entities】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const entityText = entitySection[1]
-      // 按 "- **" SplitEntity块
+      // Split entity blocks by '- **'
       const entityBlocks = entityText.split(/\n(?=- \*\*)/).filter(b => b.trim().startsWith('- **'))
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
@@ -653,7 +653,7 @@ const parsePanorama = (text) => {
     if (activeSection) {
       const lines = activeSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.activeFacts = lines.map(l => {
-        // RemoveID和引号
+        // Remove ID and quotes
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
       }).filter(Boolean)
@@ -702,7 +702,7 @@ const parseInterview = (text) => {
     const topicMatch = text.match(/\*\*InterviewTheme:\*\*\s*(.+?)(?:\n|$)/)
     if (topicMatch) result.topic = topicMatch[1].trim()
     
-    // ExtractInterview人数（如 "5 / 9 位SimAgent"）
+    // Extract interview count (e.g. '5 / 9 sim agents')
     const countMatch = text.match(/\*\*Interview人数:\*\*\s*(\d+)\s*\/\s*(\d+)/)
     if (countMatch) {
       result.successCount = parseInt(countMatch[1])
@@ -716,7 +716,7 @@ const parseInterview = (text) => {
       result.selectionReason = reasonMatch[1].trim()
     }
     
-    // 解析每Profile's Selection Reason
+    // Parse each profile's selection reason
     const parseIndividualReasons = (reasonText) => {
       const reasons = {}
       if (!reasonText) return reasons
@@ -731,7 +731,7 @@ const parseInterview = (text) => {
         let reasonStart = null
         
         // Format1: Number. **Name（index=X）**：Reason
-        // e.g.: 1. **校友_345（index=1）**：作为武大校友...
+        // e.g.: 1. **Alumni_345 (index=1)**: as university alumni...
         headerMatch = line.match(/^\d+\.\s*\*\*([^*（(]+)(?:[（(]index\s*=?\s*\d+[)）])?\*\*[：:]\s*(.*)/)
         if (headerMatch) {
           name = headerMatch[1].trim()
@@ -739,7 +739,7 @@ const parseInterview = (text) => {
         }
         
         // Format2: - SelectName（index X）：Reason
-        // e.g.: - Select家长_601（index 0）：As Parent Group Rep...
+        // e.g.: - Select Parent_601 (index 0): As parent group rep...
         if (!headerMatch) {
           headerMatch = line.match(/^-\s*Select([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
           if (headerMatch) {
@@ -749,7 +749,7 @@ const parseInterview = (text) => {
         }
         
         // Format3: - **Name（index X）**：Reason
-        // e.g.: - **家长_601（index 0）**：As Parent Group Rep...
+        // e.g.: - **Parent_601 (index 0)**: As parent group rep...
         if (!headerMatch) {
           headerMatch = line.match(/^-\s*\*\*([^*（(]+)(?:[（(]index\s*=?\s*\d+[)）])?\*\*[：:]\s*(.*)/)
           if (headerMatch) {
@@ -759,20 +759,20 @@ const parseInterview = (text) => {
         }
         
         if (name) {
-          // 保存上一Profile's Reason
+          // Save previous profile's reason
           if (currentName && currentReason.length > 0) {
             reasons[currentName] = currentReason.join(' ').trim()
           }
-          // Start新's 人
+          // Start new person
           currentName = name
           currentReason = reasonStart ? [reasonStart.trim()] : []
         } else if (currentName && line.trim() && !line.match(/^未选|^综上|^最终Select/)) {
-          // Reason's 续行（排除结尾总结段落）
+          // Reason continuation lines (exclude ending summary paragraph)
           currentReason.push(line.trim())
         }
       }
       
-      // 保存最后一Profile's Reason
+      // Save last profile's reason
       if (currentName && currentReason.length > 0) {
         reasons[currentName] = currentReason.join(' ').trim()
       }
@@ -782,7 +782,7 @@ const parseInterview = (text) => {
     
     const individualReasons = parseIndividualReasons(result.selectionReason)
     
-    // Extract每个InterviewRecord
+    // Extract each interview record
     const interviewBlocks = text.split(/#### Interview #\d+:/).slice(1)
     
     interviewBlocks.forEach((block, index) => {
@@ -799,16 +799,16 @@ const parseInterview = (text) => {
         quotes: []
       }
       
-      // Extract标题（如 "学生"、"教育从业者" 等）
+      // Extract title (e.g. 'student', 'educator', etc.)
       const titleMatch = block.match(/^(.+?)\n/)
       if (titleMatch) interview.title = titleMatch[1].trim()
       
-      // Extract姓名和Role
+      // Extract name and role
       const nameRoleMatch = block.match(/\*\*(.+?)\*\*\s*\((.+?)\)/)
       if (nameRoleMatch) {
         interview.name = nameRoleMatch[1].trim()
         interview.role = nameRoleMatch[2].trim()
-        // Settings该人's Selection Reason
+        // Set this person's selection reason
         interview.selectionReason = individualReasons[interview.name] || ''
       }
       
@@ -822,10 +822,10 @@ const parseInterview = (text) => {
       const qMatch = block.match(/\*\*Q:\*\*\s*([\s\S]*?)(?=\n\n\*\*A:\*\*|\*\*A:\*\*)/)
       if (qMatch) {
         const qText = qMatch[1].trim()
-        // 按NumberID SplitIssue
+        // Split issues by number ID
         const questions = qText.split(/\n\d+\.\s+/).filter(q => q.trim())
         if (questions.length > 0) {
-          // IfFirstIssue前面有"1."，需要特殊Process
+          // If first issue has '1.', needs special processing
           const firstQ = qText.match(/^1\.\s+(.+)/)
           if (firstQ) {
             interview.questions = [firstQ[1].trim(), ...questions.slice(1).map(q => q.trim())]
@@ -835,12 +835,12 @@ const parseInterview = (text) => {
         }
       }
       
-      // ExtractAnswer - 分Twitter和Reddit
+      // Extract answer - split twitter and reddit
       const answerMatch = block.match(/\*\*A:\*\*\s*([\s\S]*?)(?=\*\*Key Quote|$)/)
       if (answerMatch) {
         const answerText = answerMatch[1].trim()
         
-        // 分离Twitter和RedditAnswer
+        // Separate twitter and reddit answers
         const twitterMatch = answerText.match(/【TwitterPlatform Response】\n?([\s\S]*?)(?=【RedditPlatform Response】|$)/)
         const redditMatch = answerText.match(/【RedditPlatform Response】\n?([\s\S]*?)$/)
         
@@ -851,16 +851,16 @@ const parseInterview = (text) => {
           interview.redditAnswer = redditMatch[1].trim()
         }
         
-        // IfOnly一个Platform's Answer，将其作为主Answer
-        // 这样无论Display哪个Platform都能有Content
+        // If only one platform's answer, use it as main answer
+        // So whichever platform is displayed has content
         if (!twitterMatch && redditMatch) {
-          // Only Reddit Answer, also set as twitterAnswer 作为DefaultDisplay
+          // Only reddit answer, also set as twitter answer as default display
           interview.twitterAnswer = interview.redditAnswer
         } else if (twitterMatch && !redditMatch) {
           // Only Twitter Answer, also set as redditAnswer
           interview.redditAnswer = interview.twitterAnswer
         } else if (!twitterMatch && !redditMatch) {
-          // If没有明确分Platform，整体作为Answer
+          // If no explicit platform split, use whole as answer
           interview.twitterAnswer = answerText
         }
       }
@@ -917,7 +917,7 @@ const parseQuickSearch = (text) => {
       result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
-    // Try Extract边Info（If any）
+    // Try extract edge info (if any)
     const edgesSection = text.match(/### 相关边:\n([\s\S]*?)(?=\n###|$)/)
     if (edgesSection) {
       const lines = edgesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -1007,7 +1007,7 @@ const InsightDisplay = {
           class: ['insight-tab', { active: activeTab.value === 'facts' }],
           onClick: () => { activeTab.value = 'facts' }
         }, [
-          h('span', { class: 'tab-label' }, `Current关键Memory (${props.result.facts.length})`)
+          h('span', { class: 'tab-label' }, `Current Key Memory (${props.result.facts.length})`)
         ]),
         h('button', {
           class: ['insight-tab', { active: activeTab.value === 'entities' }],
@@ -1034,8 +1034,8 @@ const InsightDisplay = {
         // Facts Tab
         activeTab.value === 'facts' && props.result.facts.length > 0 && h('div', { class: 'facts-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, '时序Memory中所关联's 最新关键事实'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.facts.length} 条`)
+            h('span', { class: 'panel-title' }, 'Latest key facts in temporal memory'),
+            h('span', { class: 'panel-count' }, `Total ${props.result.facts.length}`)
           ]),
           h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1048,35 +1048,35 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `Collapse ▲` : `Expand All ${props.result.facts.length} 条 ▼`)
+          }, expandedFacts.value ? `Collapse ▲` : `Expand All ${props.result.facts.length} ▼`)
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Core Entities'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.entities.length} 个`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.entities.length}`)
           ]),
           h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 12)).map((entity, i) => 
               h('div', { class: 'entity-tag', key: i, title: entity.summary || '' }, [
                 h('span', { class: 'entity-name' }, entity.name),
                 h('span', { class: 'entity-type' }, entity.type),
-                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, `${entity.relatedFactsCount}条`)
+                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, `${entity.relatedFactsCount}`)
               ])
             )
           ),
           props.result.entities.length > 12 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? `Collapse ▲` : `Expand All ${props.result.entities.length} 个 ▼`)
+          }, expandedEntities.value ? `Collapse ▲` : `Expand All ${props.result.entities.length} ▼`)
         ]),
         
         // Relations Tab
         activeTab.value === 'relations' && props.result.relations.length > 0 && h('div', { class: 'relations-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Relation Chain'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.relations.length} 条`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.relations.length}`)
           ]),
           h('div', { class: 'relations-list' },
             (expandedRelations.value ? props.result.relations : props.result.relations.slice(0, INITIAL_SHOW_COUNT)).map((rel, i) => 
@@ -1094,14 +1094,14 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? `Collapse ▲` : `Expand All ${props.result.relations.length} 条 ▼`)
+          }, expandedRelations.value ? `Collapse ▲` : `Expand All ${props.result.relations.length} ▼`)
         ]),
         
         // Sub-queries Tab
         activeTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, '漂移QueryGenerateAnalyzeSub-issue'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.subQueries.length} 个`)
+            h('span', { class: 'panel-title' }, 'Drift Query Generate Analyze Sub-issue'),
+            h('span', { class: 'panel-count' }, `Total ${props.result.subQueries.length}`)
           ]),
           h('div', { class: 'subqueries-list' },
             props.result.subQueries.map((sq, i) => 
@@ -1114,7 +1114,7 @@ const InsightDisplay = {
         ]),
         
         // Empty state
-        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, 'NoneCurrent关键Memory'),
+        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, 'No current key memory'),
         activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, 'NoneCore Entities'),
         activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, 'NoneRelation Chain')
       ])
@@ -1191,7 +1191,7 @@ const PanoramaDisplay = {
         activeTab.value === 'active' && h('div', { class: 'facts-panel active-facts' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Current Memory'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.activeFacts.length} 条`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.activeFacts.length}`)
           ]),
           props.result.activeFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedActive.value ? props.result.activeFacts : props.result.activeFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1204,14 +1204,14 @@ const PanoramaDisplay = {
           props.result.activeFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? `Collapse ▲` : `Expand All ${props.result.activeFacts.length} 条 ▼`)
+          }, expandedActive.value ? `Collapse ▲` : `Expand All ${props.result.activeFacts.length} ▼`)
         ]),
         
         // Historical Facts Tab
         activeTab.value === 'historical' && h('div', { class: 'facts-panel historical-facts' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'History Memory'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.historicalFacts.length} 条`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.historicalFacts.length}`)
           ]),
           props.result.historicalFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedHistorical.value ? props.result.historicalFacts : props.result.historicalFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1236,14 +1236,14 @@ const PanoramaDisplay = {
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? `Collapse ▲` : `Expand All ${props.result.historicalFacts.length} 条 ▼`)
+          }, expandedHistorical.value ? `Collapse ▲` : `Expand All ${props.result.historicalFacts.length} ▼`)
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Related Entities'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.entities.length} 个`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.entities.length}`)
           ]),
           props.result.entities.length > 0 ? h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 8)).map((entity, i) => 
@@ -1256,7 +1256,7 @@ const PanoramaDisplay = {
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? `Collapse ▲` : `Expand All ${props.result.entities.length} 个 ▼`)
+          }, expandedEntities.value ? `Collapse ▲` : `Expand All ${props.result.entities.length} ▼`)
         ])
       ])
     ])
@@ -1285,7 +1285,7 @@ const InterviewDisplay = {
     
     const activeIndex = ref(0)
     const expandedAnswers = ref(new Set())
-    // 为每个Issue-Answer对维护独立's Platform SelectStatus
+    // Maintain independent platform select status for each issue-answer pair
     const platformTabs = reactive({}) // { 'agentIdx-qIdx': 'twitter' | 'reddit' }
     
     // FetchSomeIssue's CurrentPlatform Select
@@ -1316,15 +1316,15 @@ const InterviewDisplay = {
       return text.substring(0, 400) + '...'
     }
     
-    // 尝试按IssueID SplitAnswer
+    // Try split answer by issue ID
     const splitAnswerByQuestions = (answerText, questionCount) => {
       if (!answerText || questionCount <= 0) return [answerText]
       
-      // 更健壮's Split逻辑：查找所有 "Number." Format's IDPosition
+      // More robust split logic: find all 'Number.' format ID positions
       // SupportFormat：
-      // - "1.  \nContent" （Number+点+Space+Newline+Content）
-      // - "\n\n2.  \nContent" （Newline+Number+点+Space+Newline+Content）
-      // Use更宽松's 匹配：开头或Newline后's Number+点+Blank
+      // - '1.  \nContent' (number+dot+space+newline+content)
+      // - '\n\n2.  \nContent' (newline+number+dot+space+newline+content)
+      // Use more relaxed matching: number+dot+blank after start or newline
       const numberPattern = /(?:^|[\r\n]+)(\d+)\.\s+/g
       const matches = []
       let match
@@ -1337,14 +1337,14 @@ const InterviewDisplay = {
         })
       }
       
-      // If没有找到ID或只找到一个，Back整体
+      // If no ID found or only one found, return whole
       if (matches.length <= 1) {
-        // 尝试Remove开头's ID（Format：1.  \n 或 1. ）
+        // Try remove leading ID (format: 1.  \n or 1. )
         const cleaned = answerText.replace(/^\d+\.\s+/, '').trim()
         return [cleaned || answerText]
       }
       
-      // 按IDExtract各部分
+      // Extract parts by ID
       const parts = []
       for (let i = 0; i < matches.length; i++) {
         const current = matches[i]
@@ -1354,12 +1354,12 @@ const InterviewDisplay = {
         const endIdx = next ? next.index : answerText.length
         
         let part = answerText.substring(startIdx, endIdx).trim()
-        // Remove末尾可能's 多余Newline
+        // Remove possible trailing newlines
         part = part.replace(/[\r\n]+$/, '').trim()
         parts.push(part)
       }
       
-      // IfSplitSuccess且Count合理，BackSplitResult
+      // If split successful and count reasonable, return split result
       if (parts.length > 0 && parts.some(p => p)) {
         return parts
       }
@@ -1367,7 +1367,7 @@ const InterviewDisplay = {
       return [answerText]
     }
     
-    // FetchSomeIssue对应's Answer
+    // Fetch answer for some issue
     const getAnswerForQuestion = (interview, qIdx, platform) => {
       const answer = platform === 'twitter' ? interview.twitterAnswer : (interview.redditAnswer || interview.twitterAnswer)
       if (!answer) return ''
@@ -1375,7 +1375,7 @@ const InterviewDisplay = {
       const questionCount = interview.questions?.length || 1
       const answers = splitAnswerByQuestions(answer, questionCount)
       
-      // IfOnly一个Answer部分，或者索引超出，BackFullAnswer
+      // If only one answer part or index out of bounds, return full answer
       if (answers.length === 1 || qIdx >= answers.length) {
         return qIdx === 0 ? answer : ''
       }
@@ -1383,7 +1383,7 @@ const InterviewDisplay = {
       return answers[qIdx] || ''
     }
     
-    // 检查SomeIssueWhether有双Platform Response
+    // Check if some issue has dual platform response
     const hasMultiplePlatforms = (interview, qIdx) => {
       if (!interview.twitterAnswer || !interview.redditAnswer) return false
       const twitterAnswer = getAnswerForQuestion(interview, qIdx, 'twitter')
@@ -1443,7 +1443,7 @@ const InterviewDisplay = {
           h('div', { class: 'reason-content' }, props.result.interviews[activeIndex.value].selectionReason)
         ]),
         
-        // Q&A Conversation Thread - 一问一答Style
+        // Q&A conversation thread - one question one answer style
         h('div', { class: 'qa-thread' }, 
           (props.result.interviews[activeIndex.value]?.questions?.length > 0 
             ? props.result.interviews[activeIndex.value].questions 
@@ -1472,7 +1472,7 @@ const InterviewDisplay = {
                 h('div', { class: 'qa-content' }, [
                   h('div', { class: 'qa-answer-header' }, [
                     h('div', { class: 'qa-sender' }, interview?.name || 'Agent'),
-                    // 双Platform切换按钮
+                    // Dual platform toggle button
                     hasDualPlatform && h('div', { class: 'platform-switch' }, [
                       h('button', {
                         class: ['platform-btn', { active: currentPlatform === 'twitter' }],
@@ -1590,7 +1590,7 @@ const QuickSearchDisplay = {
           class: ['quicksearch-tab', { active: activeTab.value === 'facts' }],
           onClick: () => { activeTab.value = 'facts' }
         }, [
-          h('span', { class: 'tab-label' }, `事实 (${props.result.facts.length})`)
+          h('span', { class: 'tab-label' }, `Facts (${props.result.facts.length})`)
         ]),
         hasEdges.value && h('button', {
           class: ['quicksearch-tab', { active: activeTab.value === 'edges' }],
@@ -1612,7 +1612,7 @@ const QuickSearchDisplay = {
         ((!showTabs.value) || activeTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
           !showTabs.value && h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'SearchResult'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.facts.length} 条`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.facts.length}`)
           ]),
           props.result.facts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1621,18 +1621,18 @@ const QuickSearchDisplay = {
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, '未找到相关Result'),
+          ) : h('div', { class: 'empty-state' }, 'No related results found'),
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `Collapse ▲` : `Expand All ${props.result.facts.length} 条 ▼`)
+          }, expandedFacts.value ? `Collapse ▲` : `Expand All ${props.result.facts.length} ▼`)
         ]),
         
         // Edges Tab
         activeTab.value === 'edges' && hasEdges.value && h('div', { class: 'edges-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, '相关Relation'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.edges.length} 条`)
+            h('span', { class: 'panel-title' }, 'Related Relations'),
+            h('span', { class: 'panel-count' }, `Total ${props.result.edges.length}`)
           ]),
           h('div', { class: 'edges-list' },
             props.result.edges.map((edge, i) => 
@@ -1653,7 +1653,7 @@ const QuickSearchDisplay = {
         activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Related Nodes'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.nodes.length} 个`)
+            h('span', { class: 'panel-count' }, `Total ${props.result.nodes.length}`)
           ]),
           h('div', { class: 'nodes-grid' },
             props.result.nodes.map((node, i) => 
@@ -1733,18 +1733,18 @@ const isFinalizing = computed(() => {
   return !isComplete.value && isPlanningDone.value && totalSections.value > 0 && completedSections.value >= totalSections.value
 })
 
-// CurrentActive Steps（Used for顶部Display）
+// Current active steps (used for top display)
 const activeStep = computed(() => {
   const steps = workflowSteps.value
-  // 找到Current active  Steps
+  // Find current active steps
   const active = steps.find(s => s.status === 'active')
   if (active) return active
   
-  // If没有 active，Back最后一个 done  Steps
+  // If no active, return last done step
   const doneSteps = steps.filter(s => s.status === 'done')
   if (doneSteps.length > 0) return doneSteps[doneSteps.length - 1]
   
-  // 否则BackFirstStep
+  // Otherwise return first step
   return steps[0] || { noLabel: '--', title: 'WaitingStart', status: 'todo', meta: '' }
 })
 
@@ -1800,8 +1800,8 @@ const isSectionCompleted = (sectionIndex) => {
   return !!generatedSections.value[sectionIndex]
 }
 
-// 从 section_index Fetch主Section索引
-// 后端ID方案：主Section 1,2,3... Subsection 101,102（第1Chapter1,2）
+// Fetch main section index from section_index
+// Backend ID scheme: main section 1,2,3... subsection 101,102 (chapter 1,2)
 const getMainSectionIndex = (sectionIndex) => {
   if (sectionIndex >= 100) {
     return Math.floor(sectionIndex / 100)
@@ -1809,7 +1809,7 @@ const getMainSectionIndex = (sectionIndex) => {
   return sectionIndex
 }
 
-// JudgeWhether是Subsection
+// Judge whether subsection
 const isSubsection = (sectionIndex) => {
   return sectionIndex >= 100
 }
@@ -1852,49 +1852,49 @@ const truncateText = (text, maxLen) => {
 const renderMarkdown = (content) => {
   if (!content) return ''
   
-  // 去掉开头's 二级标题（## xxx），因为Section标题已在外层Display
+  // Remove leading h2 (## xxx) since section title is displayed outside
   let processedContent = content.replace(/^##\s+.+\n+/, '')
   
-  // Process代码块
+  // Process code blocks
   let html = processedContent.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>')
   
-  // Process行内代码
+  // Process inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
   
-  // Process标题
+  // Process headings
   html = html.replace(/^#### (.+)$/gm, '<h5 class="md-h5">$1</h5>')
   html = html.replace(/^### (.+)$/gm, '<h4 class="md-h4">$1</h4>')
   html = html.replace(/^## (.+)$/gm, '<h3 class="md-h3">$1</h3>')
   html = html.replace(/^# (.+)$/gm, '<h2 class="md-h2">$1</h2>')
   
-  // Process引用块
+  // Process blockquotes
   html = html.replace(/^> (.+)$/gm, '<blockquote class="md-quote">$1</blockquote>')
   
-  // Process无序List
+  // Process unordered lists
   html = html.replace(/^- (.+)$/gm, '<li class="md-li">$1</li>')
   html = html.replace(/(<li class="md-li">[\s\S]*?<\/li>)(\s*<li)/g, '$1$2')
   html = html.replace(/(<li class="md-li">.*<\/li>)+/g, '<ul class="md-ul">$&</ul>')
   
-  // Process有序List
+  // Process ordered lists
   html = html.replace(/^\d+\. (.+)$/gm, '<li class="md-oli">$1</li>')
   html = html.replace(/(<li class="md-oli">.*<\/li>)+/g, '<ol class="md-ol">$&</ol>')
   
-  // Process粗体和斜体
+  // Process bold and italic
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
   html = html.replace(/_(.+?)_/g, '<em>$1</em>')
   
-  // Process分隔线
+  // Process horizontal rules
   html = html.replace(/^---$/gm, '<hr class="md-hr">')
   
-  // ProcessNewline - 空行变成段落分隔，单Newline变成 <br>
+  // Process newlines - empty lines become paragraph breaks, single newlines become <br>
   html = html.replace(/\n\n/g, '</p><p class="md-p">')
   html = html.replace(/\n/g, '<br>')
   
-  // 包装在段落中
+  // Wrap in paragraph
   html = '<p class="md-p">' + html + '</p>'
   
-  // Clear空段落
+  // Clear empty paragraphs
   html = html.replace(/<p class="md-p"><\/p>/g, '')
   html = html.replace(/<p class="md-p">(<h[2-5])/g, '$1')
   html = html.replace(/(<\/h[2-5]>)<\/p>/g, '$1')
@@ -1941,7 +1941,7 @@ const getActionLabel = (action) => {
 
 const getLogLevelClass = (log) => {
   if (log.includes('ERROR') || log.includes('Error')) return 'error'
-  if (log.includes('WARNING') || log.includes('警告')) return 'warning'
+  if (log.includes('WARNING') || log.includes('Warning')) return 'warning'
   // INFO UseDefault color, not marked success
   return ''
 }
@@ -1968,40 +1968,40 @@ const fetchAgentLog = async () => {
           }
           
           if (log.action === 'section_start') {
-            // 无论是主Section还是SubsectionStart，都映射到主Section索引
-            // 后端ID：主Section 1,2,3... Subsection 101,102（第1Chapter1,2）
+            // Whether main section or subsection start, map to main section index
+            // Backend ID: main section 1,2,3... subsection 101,102 (chapter 1,2)
             const mainIndex = getMainSectionIndex(log.section_index)
             currentSectionIndex.value = mainIndex
           }
           
           // section_content / subsection_content - RepresentsContentGenerateComplete（But chapter may not beComplete）
-          // 这里不Update generatedSections，只RecordProgress
+          // Don't update generatedSections here, only record progress
           if (log.action === 'section_content' || log.action === 'subsection_content') {
-            // SubsectionContentGenerate时，保持主Section's  loading Status
-            // 因为FullContent会在 section_complete 时Once性提供
+            // When subsection content generates, keep main section's loading status
+            // Because full content is provided once at section_complete
           }
           
-          // section_complete - RepresentsFullSection（含所有Subsection）GenerateComplete
-          // details.content Contains合并后's FullContent
+          // section_complete - represents full section (including all subsections) generation complete
+          // details.content contains merged full content
           // 注意：Only主Section complete 时才UpdateContent，Subsection complete 不Process
           if (log.action === 'section_complete') {
             const mainIndex = getMainSectionIndex(log.section_index)
-            // Only主SectionComplete时（section_index < 100）才UpdateContent和清除 loading
+            // Only when main section completes (section_index < 100) update content and clear loading
             if (!isSubsection(log.section_index) && log.details?.content) {
               generatedSections.value[mainIndex] = log.details.content
-              // Auto展开刚Generate's Section
+              // Auto-expand newly generated section
               expandedContent.value.add(mainIndex - 1)
               currentSectionIndex.value = null
             }
-            // SubsectionComplete时不清除 currentSectionIndex，继续Display loading
+            // Don't clear currentSectionIndex on subsection complete, continue showing loading
           }
           
           if (log.action === 'report_complete') {
             isComplete.value = true
-            currentSectionIndex.value = null  // 确保清除 loading Status
+            currentSectionIndex.value = null  // ensure loading status cleared
             emit('update-status', 'completed')
             stopPolling()
-            // 滚动逻辑统一在循环End后's  nextTick 中Process
+            // Scroll logic unified in nextTick after loop end
           }
           
           if (log.action === 'report_start') {
@@ -2013,7 +2013,7 @@ const fetchAgentLog = async () => {
         
         nextTick(() => {
           if (rightPanel.value) {
-            // IfTaskCompleted，滚动到顶部；否则滚动到底部跟随最新Log
+            // If task completed, scroll to top; otherwise scroll to bottom following latest log
             if (isComplete.value) {
               rightPanel.value.scrollTop = 0
             } else {
@@ -2028,17 +2028,17 @@ const fetchAgentLog = async () => {
   }
 }
 
-// ExtractFinal AnswerContent - 从 LLM response 中ExtractSectionContent
+// Extract final answer content - extract section content from LLM response
 const extractFinalContent = (response) => {
   if (!response) return null
   
-  // Try Extract <final_answer> Tag内's Content
+  // Try extract content within <final_answer> tag
   const finalAnswerTagMatch = response.match(/<final_answer>([\s\S]*?)<\/final_answer>/)
   if (finalAnswerTagMatch) {
     return finalAnswerTagMatch[1].trim()
   }
   
-  // 尝试找 Final Answer: Behind's Content（Support多种Format）
+  // Try find 'Final Answer:' content behind (support multiple formats)
   // Format1: Final Answer:\n\nContent
   // Format2: Final Answer: Content
   const finalAnswerMatch = response.match(/Final\s*Answer:\s*\n*([\s\S]*)$/i)
@@ -2046,21 +2046,21 @@ const extractFinalContent = (response) => {
     return finalAnswerMatch[1].trim()
   }
   
-  // 尝试找 Final Answer: Behind's Content
+  // Try find 'Final Answer:' content behind
   const chineseFinalMatch = response.match(/Final Answer[:：]\s*\n*([\s\S]*)$/i)
   if (chineseFinalMatch) {
     return chineseFinalMatch[1].trim()
   }
   
-  // If以 ## 或 # 或 > 开头，可能是直接's  markdown Content
+  // If starts with ## or # or >, might be direct markdown content
   const trimmedResponse = response.trim()
   if (trimmedResponse.match(/^[#>]/)) {
     return trimmedResponse
   }
   
-  // IfContent较长且ContainsmarkdownFormat，尝试Remove思考过程后Back
+  // If content is long and contains markdown format, try remove thought process before returning
   if (response.length > 300 && (response.includes('**') || response.includes('>'))) {
-    // Remove Thought: 开头's 思考过程
+    // Remove thought: leading thought process
     const thoughtMatch = response.match(/^Thought:[\s\S]*?(?=\n\n[^T]|\n\n$)/i)
     if (thoughtMatch) {
       const afterThought = response.substring(thoughtMatch[0].length).trim()
@@ -5046,7 +5046,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
 }
 
-/* Console Logs - 与 Step3Simulation.vue 保持一致 */
+/* Console logs - keep consistent with Step3Simulation.vue */
 .console-logs {
   background: #000;
   color: #DDD;
