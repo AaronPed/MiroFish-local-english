@@ -80,7 +80,7 @@ def _run_async(coro):
     """
     _ensure_async_loop()
     future = asyncio.run_coroutine_threadsafe(coro, _async_loop)
-    return future.result(timeout=300)  # 5分钟超时
+    return future.result(timeout=7200)  # 2小时超时（本地模型处理大批量数据需要更长时间）
 
 
 class DashScopeEmbedderWrapper:
