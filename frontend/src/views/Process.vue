@@ -436,7 +436,7 @@ const currentPhase = ref(-1) // -1: uploading, 0: ontology generation, 1: graph 
 const selectedItem = ref(null) // Selected nodes or edges
 const isFullScreen = ref(false)
 
-// DOM引用
+// DOM refs
 const graphContainer = ref(null)
 const graphSvg = ref(null)
 
@@ -455,7 +455,7 @@ const statusText = computed(() => {
   if (currentPhase.value >= 2) return 'Build Complete'
   if (currentPhase.value === 1) return 'Building Graph...'
   if (currentPhase.value === 0) return 'Ontology generating'
-  return 'Initialize中'
+  return 'Initializing'
 })
 
 const entityTypes = computed(() => {
@@ -475,14 +475,14 @@ const entityTypes = computed(() => {
   return Object.values(typeMap)
 })
 
-// 方法
+// Methods
 const goHome = () => {
   router.push('/')
 }
 
 const goToNextStep = () => {
   // TODO: Enter Environment SetupStep
-  alert('Environment Setup功能开发中...')
+  alert('Environment setup feature in development...')
 }
 
 const toggleFullScreen = () => {

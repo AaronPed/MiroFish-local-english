@@ -150,9 +150,9 @@ const handleNextStep = (params = {}) => {
   
   // Round Config
   if (params.maxRounds) {
-    addLog(`Custom Rounds: ${params.maxRounds} 轮`)
+    addLog(`Custom Rounds: ${params.maxRounds} rounds`)
   } else {
-    addLog('UseAutoConfig's Sim Rounds')
+    addLog(`Use auto-config sim rounds`)
   }
   
   // Build路由Params

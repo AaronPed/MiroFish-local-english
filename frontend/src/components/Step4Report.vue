@@ -1983,7 +1983,7 @@ const fetchAgentLog = async () => {
           
           // section_complete - represents full section (including all subsections) generation complete
           // details.content contains merged full content
-          // 注意：Only主Section complete 时才UpdateContent，Subsection complete 不Process
+          // Note: only update content when main section completes, don't process subsection complete
           if (log.action === 'section_complete') {
             const mainIndex = getMainSectionIndex(log.section_index)
             // Only when main section completes (section_index < 100) update content and clear loading
@@ -2405,7 +2405,7 @@ watch(() => props.reportId, (newId) => {
 .section-number {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
-  color: #9CA3AF; /* 深灰色，不随StatusChange */
+  color: #9CA3AF; /* dark gray, doesn't change with status */
   font-weight: 500;
 }
 

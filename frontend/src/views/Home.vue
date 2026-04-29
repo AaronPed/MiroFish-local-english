@@ -73,7 +73,7 @@
             </div>
           </div>
 
-          <!-- Workflow Steps (新增Zone) -->
+          <!-- Workflow Steps (new zone) -->
           <div class="steps-container">
             <div class="steps-header">
                <span class="diamond-icon">◇</span> Workflow
@@ -111,7 +111,7 @@
                 <span class="step-num">05</span>
                 <div class="step-info">
                   <div class="step-title">Deep Interaction</div>
-                  <div class="step-desc">与SimWorld中's 任意一位ProceedChat & 与ReportAgentProceedChat</div>
+                  <div class="step-desc">Chat with any agent in sim world & chat with report agent</div>
                 </div>
               </div>
             </div>
@@ -184,7 +184,7 @@
               </div>
             </div>
 
-            <!-- Launch按钮 -->
+            <!-- Launch button -->
             <div class="console-section btn-section">
               <button 
                 class="start-engine-btn"

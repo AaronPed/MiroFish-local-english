@@ -161,9 +161,9 @@ const handleNextStep = (params = {}) => {
     currentStep.value++
     addLog(`Enter Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
     
-    // If是从 Step 2 Enter Step 3，Round Config
+    // If entering step 3 from step 2, round config
     if (currentStep.value === 3 && params.maxRounds) {
-      addLog(`Custom Rounds: ${params.maxRounds} 轮`)
+      addLog(`Custom Rounds: ${params.maxRounds} rounds`)
     }
   }
 }

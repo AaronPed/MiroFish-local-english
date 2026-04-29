@@ -142,7 +142,7 @@ const loadReportData = async () => {
   try {
     addLog(`Load Report Data: ${currentReportId.value}`)
     
-    // Fetch report Info以Fetch simulation_id
+    // Fetch report info to get simulation_id
     const reportRes = await getReport(currentReportId.value)
     if (reportRes.success && reportRes.data) {
       const reportData = reportRes.data

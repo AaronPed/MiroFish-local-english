@@ -679,7 +679,7 @@ const sendToReportAgent = async (message) => {
 
 const sendToAgent = async (message) => {
   if (!selectedAgent.value || selectedAgentIndex.value === null) {
-    throw new Error('请先Select一个SimAgent')
+    throw new Error('Please select a sim agent first')
   }
   
   addLog(`Sent to ${selectedAgent.value.username}: ${message.substring(0, 50)}...`)
