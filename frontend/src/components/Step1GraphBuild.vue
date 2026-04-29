@@ -774,18 +774,18 @@ watch(() => props.systemLogs.length, () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #eaeaea;
+  border-bottom: 1px solid #EAEAEA;
 }
 
 .dialog-title {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: #000;
 }
 
 .dialog-body {
   padding: 20px;
-  color: #555;
+  color: #444;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -797,10 +797,10 @@ watch(() => props.systemLogs.length, () => {
 .dialog-error {
   margin-top: 12px;
   padding: 10px 12px;
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
+  background: #F5F5F5;
+  border: 1px solid #E0E0E0;
   border-radius: 4px;
-  color: #cf1322;
+  color: #333;
   font-size: 12px;
 }
 
@@ -823,22 +823,22 @@ watch(() => props.systemLogs.length, () => {
 
 .dialog-btn.secondary {
   background: #fff;
-  border-color: #d9d9d9;
-  color: #555;
+  border-color: #E0E0E0;
+  color: #666;
 }
 
 .dialog-btn.secondary:hover {
   border-color: #999;
-  color: #333;
+  color: #000;
 }
 
 .dialog-btn.primary {
-  background: #1677ff;
+  background: #000;
   color: #fff;
 }
 
 .dialog-btn.primary:hover {
-  background: #4096ff;
+  background: #333;
 }
 
 .action-row {
@@ -849,17 +849,17 @@ watch(() => props.systemLogs.length, () => {
 }
 
 .build-btn {
-  background: #1677ff;
+  background: #000;
   color: #fff;
   border: none;
 }
 
 .build-btn:hover:not(:disabled) {
-  background: #4096ff;
+  background: #333;
 }
 
 .error-hint {
   font-size: 12px;
-  color: #cf1322;
+  color: #666;
 }
 </style>
