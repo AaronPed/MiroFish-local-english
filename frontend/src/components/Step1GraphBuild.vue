@@ -242,7 +242,7 @@ const props = defineProps({
   systemLogs: { type: Array, default: () => [] }
 })
 
-defineEmits(['next-step', 'retry-build'])
+const emit = defineEmits(['next-step', 'retry-build'])
 
 const selectedOntologyItem = ref(null)
 const logContent = ref(null)
