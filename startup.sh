@@ -80,7 +80,12 @@ if [ -f ~/code/llama.cpp/build/bin/llama-server ]; then
         --port 8080 \
         -ngl 999 \
         --device ROCm0 \
-        -c 8192 \
+        --flash-attn on \
+        -np 8 \
+        -cb \
+        -c 16384 \
+        -b 512 \
+        --mlock \
         > /tmp/llama-server.log 2>&1 &
     wait_for_port 8080 "llama-server" 60
 else
