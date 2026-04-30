@@ -257,6 +257,8 @@ class GraphitiClient(ZepClientAdapter):
         """
         from graphiti_core.llm_client.config import LLMConfig
         from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
+        from openai import AsyncOpenAI
+        import httpx
 
         api_key = os.environ.get('OPENAI_API_KEY')
         base_url = os.environ.get('OPENAI_BASE_URL')
@@ -274,7 +276,12 @@ class GraphitiClient(ZepClientAdapter):
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return OpenAIGenericClient(config=config)
+
+        # Long timeout for local model (some extractions take 10-30 min)
+        timeout = httpx.Timeout(connect=10.0, read=3600.0, write=10.0, pool=2.0)
+        custom_client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
+
+        return OpenAIGenericClient(config=config, client=custom_client)
 
     def _build_default_embedder(self) -> Any:
         """
