@@ -266,7 +266,7 @@ class GraphitiClient(ZepClientAdapter):
         small_model = os.environ.get('GRAPHITI_LLM_SMALL_MODEL') or None
 
         temperature = float(os.environ.get('GRAPHITI_LLM_TEMPERATURE', '0') or '0')
-        max_tokens = int(os.environ.get('GRAPHITI_LLM_MAX_TOKENS', '8192') or '8192')
+        max_tokens = int(os.environ.get('GRAPHITI_LLM_MAX_TOKENS', '4096') or '4096')
 
         config = LLMConfig(
             api_key=api_key,
@@ -281,7 +281,7 @@ class GraphitiClient(ZepClientAdapter):
         timeout = httpx.Timeout(connect=10.0, read=3600.0, write=10.0, pool=2.0)
         custom_client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
 
-        return OpenAIGenericClient(config=config, client=custom_client)
+        return OpenAIGenericClient(config=config, client=custom_client, max_tokens=max_tokens)
 
     def _build_default_embedder(self) -> Any:
         """
