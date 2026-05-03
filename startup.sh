@@ -18,7 +18,7 @@ wait_for_port() {
     local max_attempts=${3:-30}
     local attempt=0
 
-    while ! nc -z localhost "$port" 2>/dev/null; do
+    while ! bash -c "exec 3<>/dev/tcp/localhost/$port" 2>/dev/null; do
         attempt=$((attempt + 1))
         if [ "$attempt" -ge "$max_attempts" ]; then
             log_error "$service failed to start on port $port"

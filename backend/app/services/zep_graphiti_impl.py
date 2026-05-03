@@ -519,7 +519,8 @@ class GraphitiClient(ZepClientAdapter):
             props = record.get("props", {})
             # 过滤掉已单独提取的属性
             attributes = {
-                k: v for k, v in props.items()
+                k: self._serialize_value(v)
+                for k, v in props.items()
                 if k not in ["uuid", "name", "summary", "created_at", "group_id"]
             }
             created_at = record.get("created_at")
@@ -568,7 +569,8 @@ class GraphitiClient(ZepClientAdapter):
         record = records[0]
         props = record.get("props", {})
         attributes = {
-            k: v for k, v in props.items()
+            k: self._serialize_value(v)
+            for k, v in props.items()
             if k not in ["uuid", "name", "summary", "created_at", "group_id"]
         }
         created_at = record.get("created_at")
@@ -825,11 +827,25 @@ class GraphitiClient(ZepClientAdapter):
 
     # ==================== 转换辅助方法 ====================
 
+    @staticmethod
+    def _serialize_value(v: Any) -> Any:
+        """递归序列化 Neo4j 属性值，将 DateTime 等对象转为字符串"""
+        if v is None:
+            return None
+        if hasattr(v, 'to_native'):
+            return v.to_native().isoformat()
+        if isinstance(v, dict):
+            return {k: GraphitiClient._serialize_value(val) for k, val in v.items()}
+        if isinstance(v, list):
+            return [GraphitiClient._serialize_value(item) for item in v]
+        return v
+
     def _record_to_edge(self, record: Dict[str, Any]) -> GraphEdge:
         """将 Neo4j 查询结果转换为 GraphEdge"""
         props = record.get("props", {})
         attributes = {
-            k: v for k, v in props.items()
+            k: self._serialize_value(v)
+            for k, v in props.items()
             if k not in ["uuid", "fact", "created_at", "valid_at", "invalid_at", "expired_at", "group_id"]
         }
 

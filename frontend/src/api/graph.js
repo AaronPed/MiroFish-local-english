@@ -68,3 +68,26 @@ export function getProject(projectId) {
     method: 'get'
   })
 }
+
+/**
+ * List all projects
+ * @returns {Promise}
+ */
+export function listProjects() {
+  return service({
+    url: '/api/graph/project/list',
+    method: 'get'
+  })
+}
+
+/**
+ * Delete a project
+ * @param {String} projectId - ProjectID
+ * @returns {Promise}
+ */
+export function deleteProject(projectId) {
+  return service({
+    url: `/api/graph/project/${projectId}`,
+    method: 'delete'
+  })
+}

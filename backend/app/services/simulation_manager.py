@@ -14,9 +14,11 @@ from enum import Enum
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..utils.llm_client import LLMClient, get_step_llm_config
 from .zep_entity_reader import ZepEntityReader, FilteredEntities
 from .oasis_profile_generator import OasisProfileGenerator, OasisAgentProfile
 from .simulation_config_generator import SimulationConfigGenerator, SimulationParameters
+from ..models.project import ProjectManager
 
 logger = get_logger('mirofish.simulation')
 
@@ -311,8 +313,13 @@ class SimulationManager:
                     total=total_entities
                 )
             
+            # 获取步骤2的LLM配置
+            project = ProjectManager.get_project(state.project_id)
+            step2_config = get_step_llm_config(project, 'step2_env_setup')
+            step2_llm = LLMClient.from_config(step2_config)
+            
             # 传入graph_id以启用Zep检索功能，获取更丰富的上下文
-            generator = OasisProfileGenerator(graph_id=state.graph_id)
+            generator = OasisProfileGenerator(graph_id=state.graph_id, llm_client=step2_llm)
             
             def profile_progress(current, total, msg):
                 if progress_callback:
@@ -389,7 +396,7 @@ class SimulationManager:
                     total=3
                 )
             
-            config_generator = SimulationConfigGenerator()
+            config_generator = SimulationConfigGenerator(llm_client=step2_llm)
             
             if progress_callback:
                 progress_callback(

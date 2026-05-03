@@ -23,6 +23,7 @@ from openai import OpenAI
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..utils.llm_client import LLMClient
 from .zep_entity_reader import EntityNode, ZepEntityReader
 from .zep_factory import get_zep_client
 from .zep_adapter import ZepClientAdapter
@@ -72,17 +73,14 @@ class OasisAgentProfile:
             "persona": self.persona,
             "karma": self.karma,
             "created_at": self.created_at,
+            # OASIS 必需字段 - 确保始终存在（即使为 None 也要有默认值）
+            "age": self.age if self.age is not None else 30,
+            "gender": self.gender if self.gender else "other",
+            "mbti": self.mbti if self.mbti else "ISTJ",
+            "country": self.country if self.country else "中国",
         }
         
         # 添加额外人设信息（如果有）
-        if self.age:
-            profile["age"] = self.age
-        if self.gender:
-            profile["gender"] = self.gender
-        if self.mbti:
-            profile["mbti"] = self.mbti
-        if self.country:
-            profile["country"] = self.country
         if self.profession:
             profile["profession"] = self.profession
         if self.interested_topics:
@@ -188,19 +186,26 @@ class OasisProfileGenerator:
         base_url: Optional[str] = None,
         model_name: Optional[str] = None,
         zep_api_key: Optional[str] = None,
-        graph_id: Optional[str] = None
+        graph_id: Optional[str] = None,
+        llm_client: Optional[LLMClient] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
-        self.model_name = model_name or Config.LLM_MODEL_NAME
+        if llm_client:
+            self.api_key = llm_client.api_key
+            self.base_url = llm_client.base_url
+            self.model_name = llm_client.model
+            self.client = llm_client.client
+        else:
+            self.api_key = api_key or Config.LLM_API_KEY
+            self.base_url = base_url or Config.LLM_BASE_URL
+            self.model_name = model_name or Config.LLM_MODEL_NAME
 
-        if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            if not self.api_key:
+                raise ValueError("LLM_API_KEY 未配置")
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
 
         # Zep客户端用于检索丰富上下文（使用适配器工厂）
         self.zep_client: Optional[ZepClientAdapter] = None
@@ -997,6 +1002,10 @@ class OasisProfileGenerator:
                         persona=entity.summary or "A participant in social discussions.",
                         source_entity_uuid=entity.uuid,
                         source_entity_type=entity_type,
+                        age=30,
+                        gender="other",
+                        mbti="ISTJ",
+                        country="中国",
                     )
                     # 实时写入文件（即使是备用人设）
                     save_profiles_realtime()

@@ -462,6 +462,27 @@ class SimulationRunner:
             env['PYTHONUTF8'] = '1'  # Python 3.7+ 支持，让所有 open() 默认使用 UTF-8
             env['PYTHONIOENCODING'] = 'utf-8'  # 确保 stdout/stderr 使用 UTF-8
             
+            # 注入步骤3的LLM配置（如用户自定义）
+            try:
+                from .simulation_manager import SimulationManager
+                from ..models.project import ProjectManager
+                from ..utils.llm_client import get_step_llm_config
+                
+                sim_state = SimulationManager().get_simulation(simulation_id)
+                if sim_state:
+                    project = ProjectManager.get_project(sim_state.project_id)
+                    step3_cfg = get_step_llm_config(project, 'step3_simulation')
+                    if step3_cfg:
+                        if step3_cfg.get('api_key'):
+                            env['OPENAI_API_KEY'] = step3_cfg['api_key']
+                        if step3_cfg.get('base_url'):
+                            env['OPENAI_BASE_URL'] = step3_cfg['base_url']
+                        if step3_cfg.get('model_name'):
+                            env['LLM_MODEL_NAME'] = step3_cfg['model_name']
+                        logger.info(f"步骤3模拟已注入自定义LLM环境变量")
+            except Exception as e:
+                logger.warning(f"注入步骤3LLM配置失败: {e}")
+            
             # 设置工作目录为模拟目录（数据库等文件会生成在此）
             # 使用 start_new_session=True 创建新的进程组，确保可以通过 os.killpg 终止所有子进程
             process = subprocess.Popen(

@@ -49,6 +49,9 @@ class Project:
     chunk_size: int = 500
     chunk_overlap: int = 50
     
+    # LLM配置（按步骤）
+    llm_configs: Optional[Dict[str, Any]] = None
+    
     # 错误信息
     error: Optional[str] = None
     
@@ -69,6 +72,7 @@ class Project:
             "simulation_requirement": self.simulation_requirement,
             "chunk_size": self.chunk_size,
             "chunk_overlap": self.chunk_overlap,
+            "llm_configs": self.llm_configs,
             "error": self.error
         }
     
@@ -94,6 +98,7 @@ class Project:
             simulation_requirement=data.get('simulation_requirement'),
             chunk_size=data.get('chunk_size', 500),
             chunk_overlap=data.get('chunk_overlap', 50),
+            llm_configs=data.get('llm_configs'),
             error=data.get('error')
         )
 

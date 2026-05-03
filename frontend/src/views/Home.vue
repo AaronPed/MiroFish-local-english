@@ -4,6 +4,7 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <router-link to="/projects" class="nav-link">Projects</router-link>
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           Visit GitHub <span class="arrow">↗</span>
         </a>
@@ -121,6 +122,114 @@
         <!-- Right Column：Interaction Console -->
         <div class="right-panel">
           <div class="console-box">
+            <!-- LLM Engine Config -->
+            <div class="console-section">
+              <div class="console-header">
+                <span class="console-label">>_ 00 / LLM Engine Config</span>
+                <span class="console-meta">Optional — falls back to .env defaults</span>
+              </div>
+              
+              <div class="llm-config-box">
+                <!-- Toggle global vs per-step -->
+                <div class="llm-toggle-row">
+                  <label class="llm-toggle-label">
+                    <input 
+                      type="checkbox" 
+                      v-model="useGlobalLlm"
+                      :disabled="loading"
+                    />
+                    <span class="toggle-text">Use single LLM for all steps</span>
+                  </label>
+                </div>
+                
+                <!-- Global config -->
+                <div v-if="useGlobalLlm" class="llm-fields">
+                  <div class="llm-field">
+                    <label class="llm-field-label">API Key</label>
+                    <input
+                      v-model="globalLlm.apiKey"
+                      type="password"
+                      class="llm-input"
+                      placeholder="sk-..."
+                      :disabled="loading"
+                    />
+                  </div>
+                  <div class="llm-field">
+                    <label class="llm-field-label">Base URL</label>
+                    <input
+                      v-model="globalLlm.baseUrl"
+                      type="text"
+                      class="llm-input"
+                      placeholder="https://api.openai.com/v1"
+                      :disabled="loading"
+                    />
+                  </div>
+                  <div class="llm-field">
+                    <label class="llm-field-label">Model Name</label>
+                    <input
+                      v-model="globalLlm.modelName"
+                      type="text"
+                      class="llm-input"
+                      placeholder="gpt-4o-mini"
+                      :disabled="loading"
+                    />
+                  </div>
+                </div>
+                
+                <!-- Per-step config -->
+                <div v-else class="llm-steps-list">
+                  <div 
+                    v-for="(step, index) in stepLlms" 
+                    :key="index"
+                    class="llm-step-card"
+                  >
+                    <div class="llm-step-header" @click="step.collapsed = !step.collapsed">
+                      <span class="llm-step-num">0{{ index + 1 }}</span>
+                      <span class="llm-step-title">{{ step.title }}</span>
+                      <span class="llm-step-arrow">{{ step.collapsed ? '▼' : '▲' }}</span>
+                    </div>
+                    <div v-show="!step.collapsed" class="llm-step-fields">
+                      <div class="llm-field">
+                        <label class="llm-field-label">API Key</label>
+                        <input
+                          v-model="step.apiKey"
+                          type="password"
+                          class="llm-input"
+                          placeholder="sk-..."
+                          :disabled="loading"
+                        />
+                      </div>
+                      <div class="llm-field">
+                        <label class="llm-field-label">Base URL</label>
+                        <input
+                          v-model="step.baseUrl"
+                          type="text"
+                          class="llm-input"
+                          placeholder="https://api.openai.com/v1"
+                          :disabled="loading"
+                        />
+                      </div>
+                      <div class="llm-field">
+                        <label class="llm-field-label">Model Name</label>
+                        <input
+                          v-model="step.modelName"
+                          type="text"
+                          class="llm-input"
+                          placeholder="gpt-4o-mini"
+                          :disabled="loading"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="console-divider">
+              <span>RealitySeed</span>
+            </div>
+
             <!-- UploadZone -->
             <div class="console-section">
               <div class="console-header">
@@ -225,6 +334,22 @@ const isDragOver = ref(false)
 // File Input ref
 const fileInput = ref(null)
 
+// LLM Config State
+const useGlobalLlm = ref(true)
+const globalLlm = ref({
+  apiKey: '',
+  baseUrl: '',
+  modelName: ''
+})
+
+const stepLlms = ref([
+  { title: 'Graph Build', apiKey: '', baseUrl: '', modelName: '', collapsed: true },
+  { title: 'Environment Setup', apiKey: '', baseUrl: '', modelName: '', collapsed: true },
+  { title: 'Start Simulation', apiKey: '', baseUrl: '', modelName: '', collapsed: true },
+  { title: 'Report Generation', apiKey: '', baseUrl: '', modelName: '', collapsed: true },
+  { title: 'Deep Interaction', apiKey: '', baseUrl: '', modelName: '', collapsed: true }
+])
+
 // Computed: whether submittable
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
@@ -284,13 +409,65 @@ const scrollToBottom = () => {
   })
 }
 
+// Build LLM configs payload
+const buildLlmConfigs = () => {
+  const hasValue = (obj) => obj.apiKey || obj.baseUrl || obj.modelName
+  
+  if (useGlobalLlm.value) {
+    if (!hasValue(globalLlm.value)) return null
+    return {
+      use_global: true,
+      global: {
+        api_key: globalLlm.value.apiKey || undefined,
+        base_url: globalLlm.value.baseUrl || undefined,
+        model_name: globalLlm.value.modelName || undefined
+      }
+    }
+  }
+  
+  const stepKeys = [
+    'step1_graph_build',
+    'step2_env_setup',
+    'step3_simulation',
+    'step4_report',
+    'step5_interaction'
+  ]
+  
+  const steps = {}
+  let anySet = false
+  stepLlms.value.forEach((step, idx) => {
+    if (hasValue(step)) {
+      anySet = true
+      steps[stepKeys[idx]] = {
+        api_key: step.apiKey || undefined,
+        base_url: step.baseUrl || undefined,
+        model_name: step.modelName || undefined
+      }
+    }
+  })
+  
+  if (!anySet) return null
+  
+  return {
+    use_global: false,
+    global: {
+      api_key: globalLlm.value.apiKey || undefined,
+      base_url: globalLlm.value.baseUrl || undefined,
+      model_name: globalLlm.value.modelName || undefined
+    },
+    steps
+  }
+}
+
 // Start Simulation - jump now, API calls handled in Process page
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
   
+  const llmConfigs = buildLlmConfigs()
+  
   // Store pending upload data
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
+    setPendingUpload(files.value, formData.value.simulationRequirement, llmConfigs)
     
     // Jump to Process page (use special flag to represent new project)
     router.push({
@@ -347,6 +524,7 @@ const startSimulation = () => {
 .nav-links {
   display: flex;
   align-items: center;
+  gap: 24px;
 }
 
 .github-link {
@@ -362,6 +540,19 @@ const startSimulation = () => {
 }
 
 .github-link:hover {
+  opacity: 0.8;
+}
+
+.nav-link {
+  color: var(--white);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.nav-link:hover {
   opacity: 0.8;
 }
 
@@ -856,6 +1047,127 @@ const startSimulation = () => {
   0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
   70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+/* LLM Config Styles */
+.llm-config-box {
+  border: 1px solid #EEE;
+  background: #FAFAFA;
+  padding: 15px;
+}
+
+.llm-toggle-row {
+  margin-bottom: 15px;
+}
+
+.llm-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #333;
+}
+
+.llm-toggle-label input[type="checkbox"] {
+  accent-color: var(--orange);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.toggle-text {
+  user-select: none;
+}
+
+.llm-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.llm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.llm-field-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.llm-input {
+  width: 100%;
+  border: 1px solid #DDD;
+  background: #FFF;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.llm-input:focus {
+  border-color: var(--orange);
+}
+
+.llm-input::placeholder {
+  color: #BBB;
+}
+
+.llm-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.llm-step-card {
+  border: 1px solid #EEE;
+  background: #FFF;
+}
+
+.llm-step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+
+.llm-step-header:hover {
+  background: #F5F5F5;
+}
+
+.llm-step-num {
+  font-weight: 700;
+  color: var(--orange);
+  opacity: 0.7;
+}
+
+.llm-step-title {
+  flex: 1;
+  color: #333;
+}
+
+.llm-step-arrow {
+  color: #999;
+  font-size: 0.7rem;
+}
+
+.llm-step-fields {
+  padding: 12px;
+  border-top: 1px solid #EEE;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Responsive */

@@ -13,8 +13,11 @@ from ..config import Config
 from ..services.ontology_generator import OntologyGenerator
 from ..services.graph_builder import GraphBuilderService
 from ..services.text_processor import TextProcessor
+from ..services.simulation_manager import SimulationManager, SimulationStatus
+from ..services.report_agent import ReportManager, ReportStatus
 from ..utils.file_parser import FileParser
 from ..utils.logger import get_logger
+from ..utils.llm_client import LLMClient, get_step_llm_config
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager, ProjectStatus
 
@@ -51,18 +54,70 @@ def get_project(project_id: str):
     })
 
 
+def _compute_project_step(project):
+    """
+    计算项目当前所处的5步工作流阶段
+    
+    Returns:
+        dict: { step: int, label: str, status_key: str }
+    """
+    # Step 1: Graph Build
+    if project.status == ProjectStatus.FAILED:
+        return {"step": 1, "label": "Step 1: Graph Build", "status_key": "failed"}
+    
+    if project.status in [ProjectStatus.CREATED, ProjectStatus.ONTOLOGY_GENERATED, ProjectStatus.GRAPH_BUILDING]:
+        return {"step": 1, "label": "Step 1: Graph Build", "status_key": "step1"}
+    
+    # Step 1 done. Check simulations for steps 2-3.
+    sim_manager = SimulationManager()
+    simulations = sim_manager.list_simulations(project_id=project.project_id)
+    
+    # Sort by created_at descending to get the most recent simulation
+    simulations.sort(key=lambda s: s.created_at, reverse=True)
+    
+    if not simulations:
+        return {"step": 2, "label": "Step 2: Environment Setup", "status_key": "step2"}
+    
+    sim = simulations[0]
+    
+    # Step 2: Environment Setup
+    if sim.status in [SimulationStatus.CREATED, SimulationStatus.PREPARING]:
+        return {"step": 2, "label": "Step 2: Environment Setup", "status_key": "step2"}
+    
+    # Step 3: Start Simulation
+    if sim.status in [SimulationStatus.READY, SimulationStatus.RUNNING]:
+        return {"step": 3, "label": "Step 3: Start Simulation", "status_key": "step3"}
+    
+    # Simulation completed/stopped/failed -> check reports for steps 4-5
+    if sim.status in [SimulationStatus.COMPLETED, SimulationStatus.STOPPED, SimulationStatus.FAILED]:
+        report = ReportManager.get_report_by_simulation(sim.simulation_id)
+        
+        if not report or report.status != ReportStatus.COMPLETED:
+            return {"step": 4, "label": "Step 4: Report Generation", "status_key": "step4"}
+        
+        return {"step": 5, "label": "Step 5: Deep Interaction", "status_key": "step5"}
+    
+    return {"step": 1, "label": "Step 1: Graph Build", "status_key": "step1"}
+
+
 @graph_bp.route('/project/list', methods=['GET'])
 def list_projects():
     """
-    列出所有项目
+    列出所有项目（包含当前所处阶段）
     """
     limit = request.args.get('limit', 50, type=int)
     projects = ProjectManager.list_projects(limit=limit)
     
+    data = []
+    for p in projects:
+        d = p.to_dict()
+        d["current_step"] = _compute_project_step(p)
+        data.append(d)
+    
     return jsonify({
         "success": True,
-        "data": [p.to_dict() for p in projects],
-        "count": len(projects)
+        "data": data,
+        "count": len(data)
     })
 
 
@@ -174,6 +229,17 @@ def generate_ontology():
         # 创建项目
         project = ProjectManager.create_project(name=project_name)
         project.simulation_requirement = simulation_requirement
+        
+        # 解析并保存LLM配置
+        llm_configs_raw = request.form.get('llm_configs', '')
+        if llm_configs_raw:
+            try:
+                import json
+                project.llm_configs = json.loads(llm_configs_raw)
+                logger.info(f"项目已配置LLM: {project.llm_configs}")
+            except Exception as e:
+                logger.warning(f"LLM配置解析失败: {e}")
+        
         logger.info(f"创建项目: {project.project_id}")
         
         # 保存文件并提取文本
@@ -213,7 +279,9 @@ def generate_ontology():
         
         # 生成本体
         logger.info("调用 LLM 生成本体定义...")
-        generator = OntologyGenerator()
+        step1_config = get_step_llm_config(project, 'step1_graph_build')
+        llm_client = LLMClient.from_config(step1_config)
+        generator = OntologyGenerator(llm_client=llm_client)
         ontology = generator.generate(
             document_texts=document_texts,
             simulation_requirement=simulation_requirement,

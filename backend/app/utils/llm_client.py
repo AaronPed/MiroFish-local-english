@@ -10,6 +10,30 @@ from openai import OpenAI
 from ..config import Config
 
 
+def get_step_llm_config(project, step_key: str) -> Optional[Dict[str, Any]]:
+    """
+    从项目获取指定步骤的LLM配置，支持全局/单步回退链
+    
+    Args:
+        project: Project对象
+        step_key: 步骤标识，如 'step1_graph_build', 'step2_env_setup' 等
+        
+    Returns:
+        配置字典或None（调用方可用LLMClient.from_config处理）
+    """
+    if not project or not project.llm_configs:
+        return None
+    
+    configs = project.llm_configs
+    
+    # 优先使用全局配置
+    if configs.get("use_global"):
+        return configs.get("global")
+    
+    # 否则使用步骤特定配置
+    return configs.get("steps", {}).get(step_key)
+
+
 class LLMClient:
     """LLM客户端"""
     
@@ -29,6 +53,19 @@ class LLMClient:
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
+        )
+    
+    @classmethod
+    def from_config(cls, config_dict: Optional[Dict[str, Any]]) -> "LLMClient":
+        """
+        从配置字典创建LLMClient，字段缺失时回退到Config默认值
+        """
+        if not config_dict:
+            return cls()
+        return cls(
+            api_key=config_dict.get("api_key") or None,
+            base_url=config_dict.get("base_url") or None,
+            model=config_dict.get("model_name") or None,
         )
     
     def chat(
@@ -88,4 +125,3 @@ class LLMClient:
         )
         
         return json.loads(response)
-

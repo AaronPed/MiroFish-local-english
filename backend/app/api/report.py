@@ -12,9 +12,11 @@ from . import report_bp
 from ..config import Config
 from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
 from ..services.simulation_manager import SimulationManager
+from ..services.zep_tools import ZepToolsService
 from ..models.project import ProjectManager
 from ..models.task import TaskManager, TaskStatus
 from ..utils.logger import get_logger
+from ..utils.llm_client import LLMClient, get_step_llm_config
 
 logger = get_logger('mirofish.api.report')
 
@@ -130,11 +132,18 @@ def generate_report():
                     message="初始化Report Agent..."
                 )
                 
+                # 获取步骤4的LLM配置
+                step4_config = get_step_llm_config(project, 'step4_report')
+                step4_llm = LLMClient.from_config(step4_config)
+                step4_tools = ZepToolsService(llm_client=step4_llm)
+                
                 # 创建Report Agent
                 agent = ReportAgent(
                     graph_id=graph_id,
                     simulation_id=simulation_id,
-                    simulation_requirement=simulation_requirement
+                    simulation_requirement=simulation_requirement,
+                    llm_client=step4_llm,
+                    zep_tools=step4_tools
                 )
                 
                 # 进度回调
@@ -536,11 +545,18 @@ def chat_with_report_agent():
         
         simulation_requirement = project.simulation_requirement or ""
         
+        # 获取步骤5的LLM配置
+        step5_config = get_step_llm_config(project, 'step5_interaction')
+        step5_llm = LLMClient.from_config(step5_config)
+        step5_tools = ZepToolsService(llm_client=step5_llm)
+        
         # 创建Agent并进行对话
         agent = ReportAgent(
             graph_id=graph_id,
             simulation_id=simulation_id,
-            simulation_requirement=simulation_requirement
+            simulation_requirement=simulation_requirement,
+            llm_client=step5_llm,
+            zep_tools=step5_tools
         )
         
         result = agent.chat(message=message, chat_history=chat_history)
