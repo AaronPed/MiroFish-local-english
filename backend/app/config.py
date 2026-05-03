@@ -48,6 +48,11 @@ class Config:
     NEO4J_USER = os.environ.get('NEO4J_USER', 'neo4j')
     NEO4J_PASSWORD = os.environ.get('NEO4J_PASSWORD', 'password')
     
+    # Embedding 前缀配置（用于需要 task prefix 的模型，如 nomic-embed-text）
+    # 留空则保持现有行为（不添加前缀）
+    EMBEDDING_DOCUMENT_PREFIX = os.environ.get('EMBEDDING_DOCUMENT_PREFIX', '')
+    EMBEDDING_QUERY_PREFIX = os.environ.get('EMBEDDING_QUERY_PREFIX', '')
+    
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../uploads')

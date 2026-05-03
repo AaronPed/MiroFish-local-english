@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from functools import lru_cache
 
+from ..config import Config
 from .zep_adapter import (
     ZepClientAdapter,
     GraphNode,
@@ -155,6 +156,86 @@ def _create_dashscope_embedder_wrapper(base_embedder: Any, max_batch_size: int =
     except ImportError:
         # fallback: 返回普通包装器
         return DashScopeEmbedderWrapper(base_embedder, max_batch_size)
+
+
+class PrefixedEmbedderWrapper:
+    """
+    Embedding 前缀包装器
+
+    为需要 task type prefix 的模型（如 nomic-embed-text）自动添加前缀：
+    - create_batch() → 统一使用 document_prefix（批量嵌入的都是文档/episode）
+    - create() → 检测输入是否已包含 query_prefix，若是则跳过 document_prefix
+
+    如果 document_prefix / query_prefix 为空字符串，则保持透传（现有行为）。
+    """
+
+    def __init__(
+        self,
+        embedder: Any,
+        document_prefix: str = "",
+        query_prefix: str = ""
+    ):
+        self._embedder = embedder
+        self.document_prefix = document_prefix
+        self.query_prefix = query_prefix
+        if hasattr(embedder, 'config'):
+            self.config = embedder.config
+
+    def _apply_prefix(self, texts: list[str], prefix: str) -> list[str]:
+        if not prefix:
+            return texts
+        return [prefix + text for text in texts]
+
+    def _is_query_text(self, text: str) -> bool:
+        """检测文本是否已经带有 query_prefix"""
+        return bool(self.query_prefix) and text.startswith(self.query_prefix)
+
+    async def create(self, input_data) -> list[float]:
+        if isinstance(input_data, str):
+            input_data = [input_data]
+
+        prefixed = []
+        for text in input_data:
+            if self._is_query_text(text):
+                # 已带 query_prefix，不再加 document_prefix
+                prefixed.append(text)
+            else:
+                prefixed.append(self.document_prefix + text if self.document_prefix else text)
+
+        return await self._embedder.create(prefixed)
+
+    async def create_batch(self, input_data_list: list[str]) -> list[list[float]]:
+        prefixed = self._apply_prefix(input_data_list, self.document_prefix)
+        return await self._embedder.create_batch(prefixed)
+
+
+def _create_prefixed_embedder_wrapper(
+    base_embedder: Any,
+    document_prefix: str = "",
+    query_prefix: str = ""
+) -> Any:
+    """
+    创建带前缀的 Embedder 包装器（兼容 Pydantic 类型检查）
+    """
+    try:
+        from graphiti_core.embedder.client import EmbedderClient
+
+        class _PrefixedEmbedderClient(EmbedderClient):
+            def __init__(self, embedder: Any, doc_prefix: str, q_prefix: str):
+                self._wrapper = PrefixedEmbedderWrapper(embedder, doc_prefix, q_prefix)
+                if hasattr(embedder, 'config'):
+                    self.config = embedder.config
+
+            async def create(self, input_data) -> list[float]:
+                return await self._wrapper.create(input_data)
+
+            async def create_batch(self, input_data_list: list[str]) -> list[list[float]]:
+                return await self._wrapper.create_batch(input_data_list)
+
+        return _PrefixedEmbedderClient(base_embedder, document_prefix, query_prefix)
+
+    except ImportError:
+        return PrefixedEmbedderWrapper(base_embedder, document_prefix, query_prefix)
 
 
 class GraphitiClient(ZepClientAdapter):
@@ -315,7 +396,18 @@ class GraphitiClient(ZepClientAdapter):
         # DashScope API 有批次大小限制，需要包装
         if self._is_openai_compatible_only():
             logger.info("Non-standard OpenAI API detected, enabling DashScope Embedder chunking")
-            return _create_dashscope_embedder_wrapper(base_embedder, max_batch_size=10)
+            base_embedder = _create_dashscope_embedder_wrapper(base_embedder, max_batch_size=10)
+
+        # 应用 embedding 前缀（如 nomic-embed-text 需要 task prefix）
+        doc_prefix = Config.EMBEDDING_DOCUMENT_PREFIX
+        q_prefix = Config.EMBEDDING_QUERY_PREFIX
+        if doc_prefix or q_prefix:
+            logger.info(f"Embedding prefixes enabled: document='{doc_prefix}', query='{q_prefix}'")
+            base_embedder = _create_prefixed_embedder_wrapper(
+                base_embedder,
+                document_prefix=doc_prefix,
+                query_prefix=q_prefix
+            )
 
         return base_embedder
 
@@ -707,6 +799,11 @@ class GraphitiClient(ZepClientAdapter):
         非标准 API（如 DashScope）会自动降级为 rrf。
         """
         self._ensure_initialized()
+
+        # 为搜索查询添加 query prefix（如 nomic-embed-text 需要）
+        q_prefix = Config.EMBEDDING_QUERY_PREFIX
+        if q_prefix and not query.startswith(q_prefix):
+            query = q_prefix + query
 
         # 非标准 OpenAI API 不支持 cross_encoder，强制使用 rrf
         if reranker == "cross_encoder" and self._is_openai_compatible_only():
