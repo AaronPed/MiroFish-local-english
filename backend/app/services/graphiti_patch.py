@@ -45,7 +45,7 @@ def sanitize_for_neo4j(value: Any, path: str = "") -> Any:
         try:
             return json.dumps(value, ensure_ascii=False, default=str)
         except (TypeError, ValueError) as e:
-            logger.warning(f"无法序列化 dict 属性 {path}: {e}")
+            logger.warning(f"Cannot serialize dict attribute {path}: {e}")
             return str(value)
 
     if isinstance(value, (list, tuple)):
@@ -57,7 +57,7 @@ def sanitize_for_neo4j(value: Any, path: str = "") -> Any:
         try:
             return json.dumps(value, ensure_ascii=False, default=str)
         except (TypeError, ValueError) as e:
-            logger.warning(f"无法序列化 list 属性 {path}: {e}")
+            logger.warning(f"Cannot serialize list attribute {path}: {e}")
             return str(value)
 
     # 其他类型转字符串
@@ -87,7 +87,7 @@ def apply_patch() -> bool:
     global _patch_applied
 
     if _patch_applied:
-        logger.debug("Graphiti patch 已应用，跳过")
+        logger.debug("Graphiti patch already applied, skipping")
         return True
 
     try:
@@ -137,12 +137,12 @@ def apply_patch() -> bool:
         bulk_utils.add_nodes_and_edges_bulk_tx = patched_add_nodes_and_edges_bulk_tx
 
         _patch_applied = True
-        logger.info("Graphiti bulk_utils patch 应用成功")
+        logger.info("Graphiti bulk_utils patch applied successfully")
         return True
 
     except ImportError as e:
-        logger.warning(f"无法导入 graphiti_core.utils.bulk_utils: {e}")
+        logger.warning(f"Cannot import graphiti_core.utils.bulk_utils: {e}")
         return False
     except Exception as e:
-        logger.error(f"应用 Graphiti patch 失败: {e}")
+        logger.error(f"Apply Graphiti patch failed: {e}")
         return False

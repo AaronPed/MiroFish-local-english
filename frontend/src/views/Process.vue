@@ -800,7 +800,7 @@ const pollTaskStatus = async (taskId) => {
       console.log('Task status:', task.status, 'Progress:', task.progress)
       
       if (task.status === 'completed') {
-        console.log('✅ Graph BuildComplete，LoadingLoadFullData...')
+        console.log('✅ Graph build complete, loading full data...')
         
         stopPolling()
         stopGraphPolling()
@@ -809,7 +809,7 @@ const pollTaskStatus = async (taskId) => {
         // Update progress display to complete status
         buildProgress.value = {
           progress: 100,
-          message: 'Build Complete，LoadingLoadGraph...'
+          message: 'Build complete, loading graph...'
         }
         
         // Reload project data to fetch graph_id
@@ -819,9 +819,9 @@ const pollTaskStatus = async (taskId) => {
           
           // Finally load full graph data
           if (projectResponse.data.graph_id) {
-            console.log('📊 LoadFullGraph:', projectResponse.data.graph_id)
+            console.log('📊 Load full graph:', projectResponse.data.graph_id)
             await loadGraph(projectResponse.data.graph_id)
-            console.log('✅ GraphLoadComplete')
+            console.log('✅ Graph load complete')
           }
         }
         

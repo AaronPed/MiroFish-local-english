@@ -58,7 +58,7 @@ def _create_cloud_client(api_key: Optional[str] = None) -> ZepClientAdapter:
             "ZEP_API_KEY 未配置。使用 Zep Cloud 需要设置 ZEP_API_KEY 环境变量。"
         )
 
-    logger.info("创建 Zep Cloud 客户端")
+    logger.info("Creating Zep Cloud client")
     return ZepCloudClient(api_key=key)
 
 
@@ -79,7 +79,7 @@ def _create_graphiti_client(
             "Neo4j 配置不完整。使用 Graphiti 需要设置 NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD。"
         )
 
-    logger.info(f"创建 Graphiti 本地客户端: {uri}")
+    logger.info(f"Creating Graphiti local client: {uri}")
     return GraphitiClient(
         neo4j_uri=uri,
         neo4j_user=user,
@@ -133,4 +133,4 @@ def reset_zep_client():
                 except Exception:
                     pass
             _client_instance = None
-            logger.info("全局 Zep 客户端实例已重置")
+            logger.info("Global Zep client instance reset")

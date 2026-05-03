@@ -115,13 +115,13 @@ class ZepEntityReader:
                 last_exception = e
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Zep {operation_name} 第 {attempt + 1} 次尝试失败: {str(e)[:100]}, "
-                        f"{delay:.1f}秒后重试..."
+                        f"Zep {operation_name} attempt {attempt + 1} failed: {str(e)[:100]}, "
+                        f"retrying in {delay:.1f}s..."
                     )
                     time.sleep(delay)
                     delay *= 2  # 指数退避
                 else:
-                    logger.error(f"Zep {operation_name} 在 {max_retries} 次尝试后仍失败: {str(e)}")
+                    logger.error(f"Zep {operation_name} failed after {max_retries} retries: {str(e)}")
         
         raise last_exception
     
@@ -135,7 +135,7 @@ class ZepEntityReader:
         Returns:
             节点列表
         """
-        logger.info(f"获取图谱 {graph_id} 的所有节点...")
+        logger.info(f"Getting all nodes for graph {graph_id}...")
 
         # 使用重试机制调用适配器 API
         nodes = self._call_with_retry(
@@ -153,7 +153,7 @@ class ZepEntityReader:
                 "attributes": node.attributes or {},
             })
 
-        logger.info(f"共获取 {len(nodes_data)} 个节点")
+        logger.info(f"Retrieved {len(nodes_data)} nodes total")
         return nodes_data
     
     def get_all_edges(self, graph_id: str) -> List[Dict[str, Any]]:
@@ -166,7 +166,7 @@ class ZepEntityReader:
         Returns:
             边列表
         """
-        logger.info(f"获取图谱 {graph_id} 的所有边...")
+        logger.info(f"Getting all edges for graph {graph_id}...")
 
         # 使用重试机制调用适配器 API
         edges = self._call_with_retry(
@@ -185,7 +185,7 @@ class ZepEntityReader:
                 "attributes": edge.attributes or {},
             })
 
-        logger.info(f"共获取 {len(edges_data)} 条边")
+        logger.info(f"Retrieved {len(edges_data)} edges total")
         return edges_data
     
     def get_node_edges(self, node_uuid: str) -> List[Dict[str, Any]]:
@@ -218,7 +218,7 @@ class ZepEntityReader:
 
             return edges_data
         except Exception as e:
-            logger.warning(f"获取节点 {node_uuid} 的边失败: {str(e)}")
+            logger.warning(f"Get edges for node {node_uuid} failed: {str(e)}")
             return []
     
     def filter_defined_entities(
@@ -242,7 +242,7 @@ class ZepEntityReader:
         Returns:
             FilteredEntities: 过滤后的实体集合
         """
-        logger.info(f"开始筛选图谱 {graph_id} 的实体...")
+        logger.info(f"Start filtering entities for graph {graph_id}...")
         
         # 获取所有节点
         all_nodes = self.get_all_nodes(graph_id)
@@ -380,8 +380,8 @@ class ZepEntityReader:
                 filtered_entities.append(entity)
             entity_types_found.add("Entity")
 
-        logger.info(f"筛选完成: 总节点 {total_count}, 符合条件 {len(filtered_entities)}, "
-                   f"实体类型: {entity_types_found}")
+        logger.info(f"Filter complete: total nodes {total_count}, matched {len(filtered_entities)}, "
+                   f"entity types: {entity_types_found}")
 
         return FilteredEntities(
             entities=filtered_entities,
@@ -467,7 +467,7 @@ class ZepEntityReader:
             )
 
         except Exception as e:
-            logger.error(f"获取实体 {entity_uuid} 失败: {str(e)}")
+            logger.error(f"Get entity {entity_uuid} failed: {str(e)}")
             return None
     
     def get_entities_by_type(
