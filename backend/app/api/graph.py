@@ -59,14 +59,14 @@ def _compute_project_step(project):
     计算项目当前所处的5步工作流阶段
     
     Returns:
-        dict: { step: int, label: str, status_key: str }
+        dict: { step: int, label: str, status_key: str, simulation_id: str|None, report_id: str|None, simulation_status: str|None }
     """
     # Step 1: Graph Build
     if project.status == ProjectStatus.FAILED:
-        return {"step": 1, "label": "Step 1: Graph Build", "status_key": "failed"}
+        return {"step": 1, "label": "Step 1: Graph Build", "status_key": "failed", "simulation_id": None, "report_id": None, "simulation_status": None}
     
     if project.status in [ProjectStatus.CREATED, ProjectStatus.ONTOLOGY_GENERATED, ProjectStatus.GRAPH_BUILDING]:
-        return {"step": 1, "label": "Step 1: Graph Build", "status_key": "step1"}
+        return {"step": 1, "label": "Step 1: Graph Build", "status_key": "step1", "simulation_id": None, "report_id": None, "simulation_status": None}
     
     # Step 1 done. Check simulations for steps 2-3.
     sim_manager = SimulationManager()
@@ -76,28 +76,30 @@ def _compute_project_step(project):
     simulations.sort(key=lambda s: s.created_at, reverse=True)
     
     if not simulations:
-        return {"step": 2, "label": "Step 2: Environment Setup", "status_key": "step2"}
+        return {"step": 2, "label": "Step 2: Environment Setup", "status_key": "step2", "simulation_id": None, "report_id": None, "simulation_status": None}
     
     sim = simulations[0]
+    sim_id = sim.simulation_id
+    sim_status = sim.status.value
     
     # Step 2: Environment Setup
     if sim.status in [SimulationStatus.CREATED, SimulationStatus.PREPARING]:
-        return {"step": 2, "label": "Step 2: Environment Setup", "status_key": "step2"}
+        return {"step": 2, "label": "Step 2: Environment Setup", "status_key": "step2", "simulation_id": sim_id, "report_id": None, "simulation_status": sim_status}
     
     # Step 3: Start Simulation
     if sim.status in [SimulationStatus.READY, SimulationStatus.RUNNING]:
-        return {"step": 3, "label": "Step 3: Start Simulation", "status_key": "step3"}
+        return {"step": 3, "label": "Step 3: Start Simulation", "status_key": "step3", "simulation_id": sim_id, "report_id": None, "simulation_status": sim_status}
     
     # Simulation completed/stopped/failed -> check reports for steps 4-5
     if sim.status in [SimulationStatus.COMPLETED, SimulationStatus.STOPPED, SimulationStatus.FAILED]:
         report = ReportManager.get_report_by_simulation(sim.simulation_id)
         
         if not report or report.status != ReportStatus.COMPLETED:
-            return {"step": 4, "label": "Step 4: Report Generation", "status_key": "step4"}
+            return {"step": 4, "label": "Step 4: Report Generation", "status_key": "step4", "simulation_id": sim_id, "report_id": report.report_id if report else None, "simulation_status": sim_status}
         
-        return {"step": 5, "label": "Step 5: Deep Interaction", "status_key": "step5"}
+        return {"step": 5, "label": "Step 5: Deep Interaction", "status_key": "step5", "simulation_id": sim_id, "report_id": report.report_id, "simulation_status": sim_status}
     
-    return {"step": 1, "label": "Step 1: Graph Build", "status_key": "step1"}
+    return {"step": 1, "label": "Step 1: Graph Build", "status_key": "step1", "simulation_id": None, "report_id": None, "simulation_status": None}
 
 
 @graph_bp.route('/project/list', methods=['GET'])

@@ -141,7 +141,50 @@ const formatDate = (dateStr) => {
 const goHome = () => router.push('/')
 
 const openProject = (project) => {
-  router.push({ name: 'Process', params: { projectId: project.project_id } })
+  const step = project.current_step
+  const simId = step?.simulation_id
+  const reportId = step?.report_id
+  const simStatus = step?.simulation_status
+
+  switch (step?.step) {
+    case 2:
+      if (simId) {
+        router.push({ name: 'Simulation', params: { simulationId: simId } })
+      } else {
+        router.push({ name: 'Process', params: { projectId: project.project_id } })
+      }
+      break
+    case 3:
+      if (simId && simStatus === 'running') {
+        router.push({ name: 'SimulationRun', params: { simulationId: simId } })
+      } else if (simId) {
+        router.push({ name: 'Simulation', params: { simulationId: simId } })
+      } else {
+        router.push({ name: 'Process', params: { projectId: project.project_id } })
+      }
+      break
+    case 4:
+      if (reportId) {
+        router.push({ name: 'Report', params: { reportId } })
+      } else if (simId) {
+        router.push({ name: 'Simulation', params: { simulationId: simId } })
+      } else {
+        router.push({ name: 'Process', params: { projectId: project.project_id } })
+      }
+      break
+    case 5:
+      if (reportId) {
+        router.push({ name: 'Interaction', params: { reportId } })
+      } else if (simId) {
+        router.push({ name: 'Simulation', params: { simulationId: simId } })
+      } else {
+        router.push({ name: 'Process', params: { projectId: project.project_id } })
+      }
+      break
+    default:
+      // Step 1 or unknown — go to Process page
+      router.push({ name: 'Process', params: { projectId: project.project_id } })
+  }
 }
 
 const loadProjects = async () => {
